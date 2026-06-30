@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ page_title }} · {{ strings.app_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="app-body" data-lang="{{ lang }}">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">ST</div>
+        <div>
+          <strong>{{ strings.app_name }}</strong>
+          <span>{{ strings.app_tagline }}</span>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="/?lang={{ lang }}" class="nav-link {% if not tool_id %}active{% endif %}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          {{ strings.nav_dashboard }}
+        </a>
+        {% for tool in tools %}
+        <a href="{{ tool.route }}?lang={{ lang }}" class="nav-link {% if tool_id == tool.id %}active{% endif %}">
+          <span class="nav-dot {{ tool.gradient }}"></span>
+          {% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}
+        </a>
+        {% endfor %}
+        <a href="/settings?lang={{ lang }}" class="nav-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          {{ strings.nav_settings }}
+        </a>
+        <a href="/docs" class="nav-link" target="_blank">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          {{ strings.nav_api }}
+        </a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="lang-switch">
+          <a href="?lang=en" class="{% if lang == 'en' %}active{% endif %}">EN</a>
+          <a href="?lang=fa" class="{% if lang == 'fa' %}active{% endif %}">FA</a>
+        </div>
+        <small>v{{ version }}</small>
+      </div>
+    </aside>
+
+    <div class="main-area">
+      <header class="topbar">
+        <div>
+          <h1>{% block heading %}{{ page_title }}{% endblock %}</h1>
+          <p class="muted">{% block subheading %}{% endblock %}</p>
+        </div>
+        <div class="topbar-badge {% if config_exists %}ok{% else %}warn{% endif %}">
+          {% if config_exists %}{{ strings.config_ok }}{% else %}{{ strings.config_missing }}{% endif %}
+        </div>
+      </header>
+
+      <main class="content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+  <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

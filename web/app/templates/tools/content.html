@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block subheading %}{{ strings.content_desc }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <div class="panel-badge g-emerald">Mode 1</div>
+    <h2>{% if lang == 'fa' %}تحلیل Search Console{% else %}Search Console Analysis{% endif %}</h2>
+    <p class="muted">{{ strings.content_desc }}</p>
+
+    <form id="form-content" class="stack-form" enctype="multipart/form-data">
+      <label>
+        <span>{{ strings.project_name }}</span>
+        <input type="text" name="project_name" required placeholder="example.com" />
+      </label>
+      <label>
+        <span>{{ strings.sitemap_url }}</span>
+        <input type="url" name="sitemap_url" required placeholder="https://example.com/sitemap.xml" />
+      </label>
+      <label>
+        <span>{{ strings.upload_excel }}</span>
+        <input type="file" name="excel_file" accept=".xlsx,.xls" required class="file-input" />
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="test_mode" checked />
+        <span>{{ strings.test_mode }}</span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg">{{ strings.submit }}</button>
+    </form>
+  </section>
+
+  <aside class="panel panel-info">
+    <h3>{% if lang == 'fa' %}راهنما{% else %}Guide{% endif %}</h3>
+    <ol class="steps">
+      <li>{% if lang == 'fa' %}Excel Search Console را آپلود کنید{% else %}Upload Search Console Excel{% endif %}</li>
+      <li>{% if lang == 'fa' %}sitemap سایت را وارد کنید{% else %}Enter your sitemap URL{% endif %}</li>
+      <li>{% if lang == 'fa' %}پیشنهاد بهبود + ایده محتوا در output/{% else %}Get improvements + ideas in output/{% endif %}</li>
+    </ol>
+    <div class="cli-box">
+      <span>{{ strings.cli_hint }}</span>
+      <code>python main.py --mode content --test</code>
+    </div>
+    <p class="note">{% if lang == 'fa' %}تحلیل کامل AI از CLI با انتخاب فایل و مدل انجام می‌شود. وب: آپلود فایل و راهنمای اجرا.{% else %}Full AI analysis runs via CLI. Web saves your file and shows the exact command.{% endif %}</p>
+  </aside>
+</div>
+<div id="result-content" class="result-panel hidden"></div>
+{% endblock %}
+{% block scripts %}
+<script>
+  initContentForm("{{ lang }}");
+</script>
+{% endblock %}

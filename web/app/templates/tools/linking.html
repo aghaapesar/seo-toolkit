@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block subheading %}{{ strings.linking_desc }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <div class="panel-badge g-amber">Mode 4</div>
+    <h2>{% if lang == 'fa' %}لینک داخلی هوشمند{% else %}Smart Internal Links{% endif %}</h2>
+    <form id="form-linking" class="stack-form" enctype="multipart/form-data">
+      <label>
+        <span>{{ strings.sitemap_url }}</span>
+        <input type="url" name="sitemap_url" required />
+      </label>
+      <label>
+        <span>{{ strings.upload_html }}</span>
+        <input type="file" name="html_file" accept=".html,.htm" required class="file-input" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg">{{ strings.submit }}</button>
+    </form>
+    <div id="result-linking" class="result-panel hidden"></div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script>initLinkingForm("{{ lang }}");</script>{% endblock %}

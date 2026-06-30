@@ -221,12 +221,19 @@ class PageScraper:
         sitemap_url: str,
         batch_size: Optional[int] = None,
         test_mode: bool = False,
-        delay: float = 0.5
+        delay: float = 0.5,
+        non_interactive: bool = False,
     ) -> Path:
         """
         Scrape multiple URLs in batches with progress tracking.
         
         Args:
+            urls: List of URLs to scrape
+            sitemap_url: Source sitemap URL (for output naming)
+            batch_size: Pages per batch (prompted if None and interactive)
+            test_mode: Limit to 10 pages
+            delay: Delay between requests in seconds
+            non_interactive: Skip CLI prompts (for web/API usage)
             urls: List of URLs to scrape
             sitemap_url: Original sitemap URL (for filename generation)
             batch_size: Number of pages to scrape per batch (asks user if None)
@@ -264,7 +271,7 @@ class PageScraper:
         
         # Ask for batch size if not provided
         if batch_size is None:
-            batch_size = self._ask_batch_size(len(urls_to_scrape))
+            batch_size = len(urls_to_scrape) if non_interactive else self._ask_batch_size(len(urls_to_scrape))
         
         # Scraping loop
         results = []
@@ -293,7 +300,7 @@ class PageScraper:
             print(f"✅ Batch complete. Scraped: {total_scraped}/{len(urls_to_scrape)}")
             
             # Ask if user wants to continue
-            if total_scraped < len(urls_to_scrape):
+            if total_scraped < len(urls_to_scrape) and not non_interactive:
                 continue_scraping = input(f"\n⏸️  Scraped {total_scraped}/{len(urls_to_scrape)} pages. Continue? (Y/n): ").strip().lower()
                 
                 if continue_scraping == 'n':

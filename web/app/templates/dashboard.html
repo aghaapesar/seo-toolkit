@@ -1,29 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{{ title }}</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
-<body>
-  <header>
-    <h1>Seo Toolkit</h1>
-    <p>Version {{ version }}</p>
-  </header>
-  <main>
-    <section class="card">
-      <h2>Tools</h2>
-      <ul>
-        <li><a href="/index-diff">URL Index Diff</a> — separate new vs submitted sitemap URLs</li>
-        <li><a href="/docs">API Documentation</a></li>
-      </ul>
-    </section>
-    <section class="card">
-      <h2>CLI</h2>
-      <pre>python main.py --mode index-diff --domain example.com</pre>
-      <p>See <code>docs/INSTALLATION.md</code> for full setup.</p>
-    </section>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+{% block subheading %}{{ strings.hero_sub }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <div class="hero-glow"></div>
+  <h2 class="hero-title">{{ strings.hero_title }}</h2>
+  <p class="hero-lead">{{ strings.hero_sub }}</p>
+</section>
+
+<section class="stats-row">
+  <div class="stat-card">
+    <span class="stat-num">6</span>
+    <span class="stat-label">{% if lang == 'fa' %}ابزار{% else %}Tools{% endif %}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">FA</span>
+    <span class="stat-label">{% if lang == 'fa' %}بهینه فارسی{% else %}Persian-first{% endif %}</span>
+  </div>
+  <div class="stat-card">
+    <span class="stat-num">AI</span>
+    <span class="stat-label">Multi-model</span>
+  </div>
+</section>
+
+<h2 class="section-title">{{ strings.features }}</h2>
+<div class="tool-grid">
+  {% for tool in tools %}
+  <article class="tool-card {{ tool.gradient }}">
+    <div class="tool-card-head">
+      <span class="tool-icon">{{ tool.id[0]|upper }}</span>
+      <h3>{% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}</h3>
+    </div>
+    <p>{{ strings[tool.desc_key] }}</p>
+    <a href="{{ tool.route }}?lang={{ lang }}" class="btn btn-primary">{{ strings.run_tool }}</a>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

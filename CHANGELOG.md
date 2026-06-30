@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.5.1 (2025-06-30)
+
+### Web UI overhaul
+- Full bilingual (EN/FA) dashboard with RTL support and Vazirmatn font
+- Dedicated pages for all 6 operational modes
+- REST API endpoints for scraping, linking, synonyms, index-diff
+- Dark modern design system with responsive layout
+
 ## v2.5.0 (2025-06-30)
 
 ### Rebrand to Seo Toolkit

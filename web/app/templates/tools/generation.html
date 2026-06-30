@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block subheading %}{{ strings.generation_desc }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <div class="panel-badge g-violet">Mode 3</div>
+    <h2>{% if lang == 'fa' %}تولید مقاله با AI{% else %}AI Article Generation{% endif %}</h2>
+    <p class="muted">{{ strings.generation_desc }}</p>
+    <form id="form-generation" class="stack-form" enctype="multipart/form-data">
+      <label>
+        <span>{{ strings.project_name }}</span>
+        <input type="text" name="project_name" required />
+      </label>
+      <label>
+        <span>{% if lang == 'fa' %}Excel خروجی Mode 1 (output/){% else %}Mode 1 output Excel{% endif %}</span>
+        <input type="file" name="excel_file" accept=".xlsx,.xls" class="file-input" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg">{{ strings.submit }}</button>
+    </form>
+    <div id="result-generation" class="result-panel hidden"></div>
+  </section>
+  <aside class="panel panel-info">
+    <div class="cli-box">
+      <code>python main.py --mode generation</code>
+    </div>
+    <p class="note">{% if lang == 'fa' %}انتخاب مدل AI و تولید Word/HTML از CLI{% else %}Select AI model and export Word/HTML via CLI{% endif %}</p>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script>initGenerationForm("{{ lang }}");</script>{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block subheading %}{{ strings.index_diff_desc }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <div class="panel-badge g-cyan">Mode 6</div>
+    <h2>{% if lang == 'fa' %}URL جدید vs ارسال‌شده{% else %}New vs Submitted URLs{% endif %}</h2>
+    <form id="form-index-diff" class="stack-form">
+      <label>
+        <span>{{ strings.domain }}</span>
+        <input type="text" name="domain" required placeholder="example.com" />
+      </label>
+      <label>
+        <span>{{ strings.sitemap_url }}</span>
+        <input type="url" name="sitemap_url" required />
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" name="mark_submitted" />
+        <span>{{ strings.mark_submitted }}</span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg">{{ strings.submit }}</button>
+    </form>
+
+    <details class="import-block">
+      <summary>{{ strings.import_urls }}</summary>
+      <form id="form-index-import" class="stack-form" enctype="multipart/form-data">
+        <input type="hidden" name="domain" id="import_domain" />
+        <label>
+          <span>.txt</span>
+          <input type="file" name="urls_file" accept=".txt" class="file-input" />
+        </label>
+        <button type="submit" class="btn btn-ghost">Import</button>
+      </form>
+    </details>
+
+    <div id="result-index-diff" class="result-panel hidden"></div>
+  </section>
+  <aside class="panel panel-info">
+    <div id="index-status" class="status-box muted">{% if lang == 'fa' %}وضعیت دامنه پس از اجرا{% else %}Domain status after run{% endif %}</div>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script>initIndexDiffForm("{{ lang }}");</script>{% endblock %}

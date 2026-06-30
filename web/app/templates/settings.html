@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block subheading %}{{ strings.settings_desc }}{% endblock %}
+{% block content %}
+<div class="settings-grid">
+  <section class="panel">
+    <h2>{% if lang == 'fa' %}پیکربندی{% else %}Configuration{% endif %}</h2>
+    <div class="config-status {% if config_exists %}ok{% else %}warn{% endif %}">
+      {% if config_exists %}{{ strings.config_ok }}{% else %}{{ strings.config_missing }}{% endif %}
+    </div>
+    <pre class="cli-box">cp config.sample.yaml config.yaml</pre>
+  </section>
+  <section class="panel">
+    <h2>CLI</h2>
+    <pre class="cli-box">python main.py
+python main.py --mode index-diff --domain example.com
+python main.py --mode content --test</pre>
+  </section>
+  <section class="panel">
+    <h2>{% if lang == 'fa' %}مستندات{% else %}Docs{% endif %}</h2>
+    <ul class="doc-links">
+      <li><a href="/docs" target="_blank">API</a></li>
+      <li>docs/INSTALLATION.md</li>
+      <li>docs/INDEX_DIFF.md</li>
+    </ul>
+  </section>
+</div>
+{% endblock %}
