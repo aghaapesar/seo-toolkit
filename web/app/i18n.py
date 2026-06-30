@@ -191,6 +191,7 @@ def page_context(request, page_title: str, **extra: Any) -> Dict[str, Any]:
         "tools": TOOLS,
         "version": __version__,
         "config_exists": Path_exists_config(),
+        "tool_id": extra.pop("tool_id", None),
         **extra,
     }
 

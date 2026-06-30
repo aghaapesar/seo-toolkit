@@ -20,12 +20,12 @@
         </div>
       </div>
       <nav class="nav">
-        <a href="/?lang={{ lang }}" class="nav-link {% if not tool_id %}active{% endif %}">
+        <a href="/?lang={{ lang }}" class="nav-link {% if tool_id is none %}active{% endif %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           {{ strings.nav_dashboard }}
         </a>
         {% for tool in tools %}
-        <a href="{{ tool.route }}?lang={{ lang }}" class="nav-link {% if tool_id == tool.id %}active{% endif %}">
+        <a href="{{ tool.route }}?lang={{ lang }}" class="nav-link {% if tool_id is not none and tool_id == tool.id %}active{% endif %}">
           <span class="nav-dot {{ tool.gradient }}"></span>
           {% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}
         </a>

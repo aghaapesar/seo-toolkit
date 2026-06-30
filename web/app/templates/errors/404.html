@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="panel" style="text-align:center;padding:3rem">
+  <h2>404</h2>
+  <p class="muted">{% if lang == 'fa' %}صفحه پیدا نشد{% else %}Page not found{% endif %}</p>
+  <a href="/?lang={{ lang }}" class="btn btn-primary">{{ strings.back }}</a>
+</section>
+{% endblock %}
