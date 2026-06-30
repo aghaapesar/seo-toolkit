@@ -163,6 +163,38 @@ class UrlIndexTracker:
             self._save_history()
         return added
 
+    def import_from_txt_files(self, file_paths: List[str]) -> Dict:
+        """
+        Import URLs from multiple text files in one batch.
+
+        Input:
+            file_paths: List of paths to newline-delimited URL files.
+
+        Output:
+            Dict with total_added, files_processed, and per-file breakdown.
+        """
+        total_added = 0
+        file_results: List[Dict] = []
+
+        for file_path in file_paths:
+            path = Path(file_path)
+            try:
+                added = self.import_from_txt(file_path)
+                total_added += added
+                file_results.append(
+                    {"name": path.name, "added": added, "error": None}
+                )
+            except FileNotFoundError as exc:
+                file_results.append(
+                    {"name": path.name, "added": 0, "error": str(exc)}
+                )
+
+        return {
+            "total_added": total_added,
+            "files_processed": len(file_results),
+            "files": file_results,
+        }
+
     def mark_batch_submitted(
         self, urls: List[str], source_file: str = ""
     ) -> str:

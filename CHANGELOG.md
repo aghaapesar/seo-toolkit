@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.1 (2025-06-30)
+
+### Index Diff — multi-file import (web)
+- Upload **multiple `.txt` files at once** on `/tools/index-diff`
+- API accepts `urls_files[]` and returns per-file + total counts
+- New `UrlIndexTracker.import_from_txt_files()` helper
+
 ## v2.6.0 (2025-06-30)
 
 ### Multi-project support

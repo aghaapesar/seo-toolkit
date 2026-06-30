@@ -146,8 +146,23 @@ function initProjectsPage(lang) {
   });
 }
 
-function initIndexDiffForm(lang) {
+function initIndexDiffForm(lang, importLabels = {}) {
   initProjectSelect();
+
+  const fileInput = document.getElementById("import-txt-files");
+  const fileHint = document.getElementById("import-file-hint");
+  if (fileInput && fileHint) {
+    fileInput.addEventListener("change", () => {
+      const count = fileInput.files?.length || 0;
+      if (count === 0) {
+        fileHint.textContent = importLabels.importHint || "";
+      } else {
+        const label = importLabels.filesSelected || "file(s) selected";
+        fileHint.textContent = `${count} ${label}`;
+      }
+    });
+  }
+
   bindForm("form-index-diff", async (form, lg) => {
     const body = {
       domain: form.domain.value,
@@ -179,11 +194,15 @@ function initIndexDiffForm(lang) {
   bindForm("form-index-import", async (form, lg) => {
     const main = document.getElementById("form-index-diff");
     const domainInput = document.getElementById("import_domain");
+    const fileInputEl = document.getElementById("import-txt-files");
     if (main?.domain?.value && domainInput) {
       domainInput.value = main.domain.value;
     }
     if (!domainInput?.value) {
       throw new Error(lg === "fa" ? "ابتدا دامنه را وارد کنید" : "Enter domain first");
+    }
+    if (!fileInputEl?.files?.length) {
+      throw new Error(importLabels.noFiles || (lg === "fa" ? "حداقل یک فایل txt انتخاب کنید" : "Select at least one .txt file"));
     }
     const fd = new FormData(form);
     if (main?.project_slug?.value) {
@@ -193,6 +212,23 @@ function initIndexDiffForm(lang) {
     const res = await fetch("/api/v1/index-diff/import", { method: "POST", body: fd });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.detail || res.statusText);
+
+    const fileRows = (data.files || [])
+      .map((f) => {
+        const err = f.error ? ` — ${f.error}` : "";
+        return `<div class="result-row"><span>${f.name}</span><strong>+${f.added}${err}</strong></div>`;
+      })
+      .join("");
+
+    showResult(
+      "result-index-import",
+      `<div class="result-success">
+        <h4>${t(lg, "success")}</h4>
+        <div class="result-row"><span>${importLabels.totalAdded || "Total new URLs"}</span><strong>${data.added}</strong></div>
+        <div class="result-row"><span>${importLabels.filesProcessed || "Files processed"}</span><strong>${data.files_processed}</strong></div>
+        ${fileRows}
+      </div>`
+    );
     toast(`${t(lg, "success")}: +${data.added}`, "success");
   });
 }

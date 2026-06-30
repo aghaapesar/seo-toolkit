@@ -59,7 +59,13 @@ index_history/
 
 ## Web UI
 
-Open `/index-diff` in the FastAPI dashboard for the same workflow in the browser.
+Open `/tools/index-diff` in the FastAPI dashboard for the same workflow in the browser.
+
+### Import multiple txt files
+
+In the **Import previous URLs** section you can select **several `.txt` files at once** (Ctrl/Cmd+click or Shift+click). Each file should contain one URL per line. Duplicates across files are merged automatically.
+
+API: `POST /api/v1/index-diff/import` with multipart field `urls_files` (repeatable).
 
 ---
 
@@ -85,3 +91,8 @@ python main.py --mode index-diff --domain example.com
 ```bash
 python main.py --mode index-diff --domain example.com --import old_urls.txt
 ```
+
+### import چند فایل در وب
+
+در صفحه `/tools/index-diff` بخش import را باز کنید و **چند فایل txt همزمان** انتخاب کنید.
+

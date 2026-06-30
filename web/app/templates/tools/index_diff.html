@@ -28,11 +28,13 @@
       <form id="form-index-import" class="stack-form" enctype="multipart/form-data">
         <input type="hidden" name="domain" id="import_domain" />
         <label>
-          <span>.txt</span>
-          <input type="file" name="urls_file" accept=".txt" class="file-input" />
+          <span>{{ strings.import_txt_label }}</span>
+          <input type="file" name="urls_files" accept=".txt" class="file-input" multiple id="import-txt-files" />
         </label>
-        <button type="submit" class="btn btn-ghost">Import</button>
+        <p class="muted file-hint" id="import-file-hint">{{ strings.import_txt_hint }}</p>
+        <button type="submit" class="btn btn-ghost">{{ strings.import_submit }}</button>
       </form>
+      <div id="result-index-import" class="result-panel hidden"></div>
     </details>
 
     <div id="result-index-diff" class="result-panel hidden"></div>
@@ -42,4 +44,14 @@
   </aside>
 </div>
 {% endblock %}
-{% block scripts %}<script>initIndexDiffForm("{{ lang }}");</script>{% endblock %}
+{% block scripts %}
+<script>
+  initIndexDiffForm("{{ lang }}", {
+    importHint: {{ strings.import_txt_hint | tojson }},
+    filesSelected: {{ strings.import_files_selected | tojson }},
+    noFiles: {{ ('حداقل یک فایل txt انتخاب کنید' if lang == 'fa' else 'Select at least one .txt file') | tojson }},
+    totalAdded: {{ ('مجموع URL جدید' if lang == 'fa' else 'Total new URLs') | tojson }},
+    filesProcessed: {{ ('فایل پردازش‌شده' if lang == 'fa' else 'Files processed') | tojson }},
+  });
+</script>
+{% endblock %}
