@@ -120,6 +120,13 @@ app:
   # Output directory for generated Excel files
   output_directory: "output"
 
+  # Optional outbound HTTP proxy (when browser works but Python cannot reach a site)
+  # Example: http://127.0.0.1:7890
+  http_proxy: ""
+  https_proxy: ""
+  # Set true only if you want Python to use HTTP_PROXY / HTTPS_PROXY env vars
+  trust_system_proxy: false
+
 # Environment Variables Setup
 # Set these environment variables instead of putting API keys directly in config:
 #

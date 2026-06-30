@@ -6,7 +6,7 @@
   <section class="panel panel-form">
     <div class="panel-badge g-cyan">Mode 6</div>
     <h2>{% if lang == 'fa' %}URL جدید vs ارسال‌شده{% else %}New vs Submitted URLs{% endif %}</h2>
-    <form id="form-index-diff" class="stack-form">
+    <form id="form-index-diff" class="stack-form" enctype="multipart/form-data">
       {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.domain }}</span>
@@ -14,8 +14,13 @@
       </label>
       <label>
         <span>{{ strings.sitemap_url }}</span>
-        <input type="url" name="sitemap_url" id="sitemap-field" required value="{{ active_project.sitemap_url if active_project else '' }}" />
+        <input type="url" name="sitemap_url" id="sitemap-field" placeholder="https://example.com/sitemap.xml" value="{{ active_project.sitemap_url if active_project else '' }}" />
       </label>
+      <label>
+        <span>{{ strings.sitemap_upload_label }}</span>
+        <input type="file" name="sitemap_file" accept=".xml,text/xml" class="file-input" id="sitemap-file-field" />
+      </label>
+      <p class="muted file-hint">{{ strings.sitemap_upload_hint }}</p>
       <label class="checkbox-row">
         <input type="checkbox" name="mark_submitted" />
         <span>{{ strings.mark_submitted }}</span>
@@ -40,7 +45,8 @@
         data-files-selected="{{ strings.import_files_selected | default('', true) }}"
         data-no-files="{{ strings.import_no_files | default('', true) }}"
         data-total-added="{{ strings.import_total_added | default('', true) }}"
-        data-files-processed="{{ strings.import_files_processed | default('', true) }}">
+        data-files-processed="{{ strings.import_files_processed | default('', true) }}"
+        data-sitemap-required="{{ strings.sitemap_required | default('', true) }}">
       </div>
     </details>
 
@@ -62,6 +68,7 @@
       noFiles: ds.noFiles || "",
       totalAdded: ds.totalAdded || "",
       filesProcessed: ds.filesProcessed || "",
+      sitemapRequired: ds.sitemapRequired || "",
     });
   })();
 </script>

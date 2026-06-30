@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.5 (2025-06-30)
+
+### Fix — blocked sitemap hosts (e.g. sargarmia.com)
+- Shared HTTP client: browser headers, `trust_env=False` by default, optional `app.http_proxy` in config.yaml
+- HTTPS→HTTP fallback and clearer connection errors
+- **Upload sitemap.xml** on Index Diff when download fails (Save As from browser)
+- Web uses `POST /api/v1/index-diff/diff-form` (URL and/or file)
+
 ## v2.6.4 (2025-06-30)
 
 ### Fix — sitemap download failures in web Index Diff

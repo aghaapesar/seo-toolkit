@@ -184,19 +184,30 @@ function initIndexDiffForm(lang, importLabels = {}) {
   }
 
   bindForm("form-index-diff", async (form, lg) => {
-    const body = {
-      domain: form.domain.value,
-      sitemap_url: form.sitemap_url.value,
-      mark_submitted: form.mark_submitted.checked,
-      project_slug: form.project_slug?.value || null,
-    };
+    const sitemapUrl = form.sitemap_url?.value?.trim() || "";
+    const sitemapFile = document.getElementById("sitemap-file-field");
+    const hasFile = sitemapFile?.files?.length > 0;
+    if (!sitemapUrl && !hasFile) {
+      throw new Error(
+        importLabels.sitemapRequired ||
+          (lg === "fa" ? "آدرس sitemap یا فایل sitemap.xml را وارد کنید" : "Enter sitemap URL or upload sitemap.xml")
+      );
+    }
+
+    const fd = new FormData();
+    fd.append("domain", form.domain.value);
+    fd.append("sitemap_url", sitemapUrl);
+    fd.append("mark_submitted", form.mark_submitted.checked ? "true" : "false");
+    if (form.project_slug?.value) {
+      fd.append("project_slug", form.project_slug.value);
+    }
+    if (hasFile) {
+      fd.append("sitemap_file", sitemapFile.files[0]);
+    }
+
     toast(t(lg, "processing"));
-    const res = await fetch("/api/v1/index-diff/diff", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await res.json();
+    const res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
     showResult(
       "result-index-diff",

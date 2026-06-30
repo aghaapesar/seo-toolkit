@@ -69,6 +69,16 @@ API: `POST /api/v1/index-diff/import` with multipart field `urls_files` (repeata
 
 Sitemap downloads use browser-like HTTP headers. If a site blocks bots, the API returns a detailed error (403, SSL, timeout).
 
+**Workaround:** Save `sitemap.xml` from your browser and upload it on the Index Diff page.
+
+Optional proxy in `config.yaml`:
+
+```yaml
+app:
+  http_proxy: "http://127.0.0.1:7890"
+  trust_system_proxy: false
+```
+
 ---
 
 # راهنمای فارسی - تفکیک URL ایندکس

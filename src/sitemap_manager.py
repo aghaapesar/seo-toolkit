@@ -5,7 +5,6 @@ Handles interactive sitemap download, parsing, and management with retry logic.
 Supports sitemap indices and selective sitemap downloads.
 """
 
-import requests
 from lxml import etree
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -14,19 +13,9 @@ from tqdm import tqdm
 import hashlib
 import time
 
-logger = logging.getLogger(__name__)
+from src.services.http_client import DEFAULT_REQUEST_HEADERS, fetch_url
 
-# Browser-like headers — many sites block default python-requests User-Agent.
-DEFAULT_REQUEST_HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/120.0.0.0 Safari/537.36"
-    ),
-    "Accept": "application/xml,text/xml,application/xhtml+xml,text/html;q=0.9,*/*;q=0.8",
-    "Accept-Language": "en-US,en;q=0.9,fa;q=0.8",
-    "Accept-Encoding": "gzip, deflate",
-}
+logger = logging.getLogger(__name__)
 
 
 class SitemapManager:
@@ -99,45 +88,15 @@ class SitemapManager:
         if not silent:
             print(f"\n📥 Downloading sitemap: {url}")
 
-        last_exc: Optional[Exception] = None
+        content, error = fetch_url(url, timeout=timeout, max_retries=max_retries)
+        if content:
+            if not silent:
+                print("✅ Success!")
+            return content
 
-        for attempt in range(1, max_retries + 1):
-            try:
-                if not silent:
-                    print(f"   Attempt {attempt}/{max_retries}...", end=" ")
-
-                response = requests.get(
-                    url,
-                    headers=DEFAULT_REQUEST_HEADERS,
-                    timeout=timeout,
-                    allow_redirects=True,
-                )
-                response.raise_for_status()
-
-                if not silent:
-                    print("✅ Success!")
-                logger.info(f"Downloaded sitemap from {url} (attempt {attempt})")
-                return response.content
-
-            except requests.RequestException as exc:
-                last_exc = exc
-                self.last_download_error = f"{type(exc).__name__}: {exc}"
-                if not silent:
-                    print(f"❌ Failed: {str(exc)[:80]}")
-                logger.warning(
-                    f"Download attempt {attempt} failed for {url}: {self.last_download_error}"
-                )
-
-                if attempt < max_retries:
-                    wait_time = min(2 ** attempt, 30)
-                    if not silent:
-                        print(f"   Waiting {wait_time}s before retry...")
-                    time.sleep(wait_time)
-                elif not silent:
-                    print(f"\n❌ All {max_retries} download attempts failed!")
-
-        if last_exc is not None:
-            self.last_download_error = f"{type(last_exc).__name__}: {last_exc}"
+        self.last_download_error = error
+        if not silent and error:
+            print(f"❌ Failed: {error[:120]}")
         return None
     
     def _parse_sitemap_content(self, content: bytes) -> Tuple[List[str], List[str]]:
