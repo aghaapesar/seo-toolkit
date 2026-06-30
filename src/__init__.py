@@ -1,10 +1,20 @@
 """
-SEO Content Analysis & Optimization Tool
+Seo Toolkit
 
-A comprehensive tool for analyzing Google Search Console data and generating
-content improvement suggestions using AI.
+Persian-optimized SEO content analyzer and automation toolkit.
 """
 
-__version__ = "1.0.0"
-__author__ = "SEO Content Optimizer"
+from pathlib import Path
 
+
+def read_version() -> str:
+    """Read package version from VERSION file."""
+    version_file = Path(__file__).resolve().parent.parent / "VERSION"
+    try:
+        return version_file.read_text(encoding="utf-8").strip()
+    except FileNotFoundError:
+        return "2.5.0"
+
+
+__version__ = read_version()
+__author__ = "Seo Toolkit"

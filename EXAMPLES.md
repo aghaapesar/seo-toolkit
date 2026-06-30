@@ -1,6 +1,37 @@
-# Usage Examples & Workflow
+# Usage Examples & Workflow - Seo Toolkit
 
-This guide provides real-world examples and workflows for using the SEO Content Optimizer.
+Real-world examples and workflows for **Seo Toolkit** (Persian SEO automation).
+
+Repository: https://github.com/aghaapesar/seo-toolkit
+
+---
+
+## Example 0: URL Index Diff (Mode 6)
+
+### Scenario
+You submit sitemap URLs to an indexing tool weekly and need only **new** URLs each time.
+
+### Workflow
+
+1. **Import previous batch (first time only)**
+```bash
+python main.py --mode index-diff --domain example.com --import previous_urls.txt
+```
+
+2. **Run diff against live sitemap**
+```bash
+python main.py --mode index-diff --domain example.com
+```
+
+3. **Submit output to indexing tool**
+   - Use `output/index_diff/example_com/new_urls_*.txt`
+   - Confirm marking URLs as submitted when prompted
+
+4. **Web UI alternative**
+```bash
+uvicorn web.app.main:app --reload --port 8000
+# Open http://127.0.0.1:8000/index-diff
+```
 
 ---
 

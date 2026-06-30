@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header>
+    <h1>Seo Toolkit</h1>
+    <p>Version {{ version }}</p>
+  </header>
+  <main>
+    <section class="card">
+      <h2>Tools</h2>
+      <ul>
+        <li><a href="/index-diff">URL Index Diff</a> — separate new vs submitted sitemap URLs</li>
+        <li><a href="/docs">API Documentation</a></li>
+      </ul>
+    </section>
+    <section class="card">
+      <h2>CLI</h2>
+      <pre>python main.py --mode index-diff --domain example.com</pre>
+      <p>See <code>docs/INSTALLATION.md</code> for full setup.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,6 +1,35 @@
-# Changelog - SEO Content Optimizer
+# Changelog - Seo Toolkit
 
 All notable changes to this project will be documented in this file.
+
+## v2.5.0 (2025-06-30)
+
+### Rebrand to Seo Toolkit
+- Project renamed from `simple-seo-tool` / SEO Content Analysis & Optimization Tool to **Seo Toolkit**
+- New log file: `logs/seo_toolkit.log`
+- `SEOContentOptimizer` alias kept; primary class is `SeoToolkit`
+
+### Architecture refactor
+- Thin `main.py` CLI entry
+- `src/app/toolkit.py` application core
+- `src/cli/` prompts, sections, logging setup
+- `src/services/url_index_tracker.py` shared service layer
+- `docs/` architecture, installation, API modules
+
+### New Mode 6: URL Index Diff
+- Compare sitemap URLs against previously submitted indexing URLs
+- Per-domain history in `index_history/`
+- Export `new_urls_*.txt` and `already_submitted_*.txt`
+- CLI flags: `--domain`, `--import`, `--mark-submitted`
+- See `docs/INDEX_DIFF.md`
+
+### Web MVP (FastAPI)
+- Dashboard at `/`
+- Index diff UI at `/index-diff`
+- REST API at `/api/v1/index-diff/*` and `/docs`
+
+### Tests
+- pytest suite for analyzer, sitemap parser, knowledge base, URL tracker
 
 ## v2.4.0 (2024-10-13)
 
@@ -893,7 +922,7 @@ None currently. Please report issues via GitHub or email.
 ### 📞 Support
 
 - **Documentation**: See README.md, QUICKSTART.md, FEATURES.md
-- **Logs**: Check `seo_optimizer.log` for debugging
+- **Logs**: Check `logs/seo_toolkit.log` for debugging
 - **Test**: Use `--test` flag for validation
 - **Connection**: Run `test_connection.py` to verify AI setup
 

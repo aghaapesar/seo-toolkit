@@ -1,58 +1,59 @@
-# Project Structure - SEO Content Optimizer v2.0
+# Project Structure - Seo Toolkit v2.5.0
 
 Complete directory structure and file organization guide.
 
+Repository: https://github.com/aghaapesar/seo-toolkit
+
 ---
 
-## 📁 Directory Tree
+## Directory Tree
 
 ```
-SEOContentAnalysis/
-├── 📄 main.py                      # Main application entry point
-├── 📄 test_connection.py           # AI connection test script
-├── 📄 config.yaml                  # Your configuration (gitignored)
-├── 📄 config.sample.yaml           # Sample configuration template
-├── 📄 requirements.txt             # Python dependencies
+seo-toolkit/
+├── main.py                         # CLI entry point (thin dispatcher)
+├── test_connection.py              # AI connection test script
+├── config.yaml                     # Your configuration (gitignored)
+├── config.sample.yaml              # Sample configuration template
+├── requirements.txt                # Python dependencies
+├── requirements-dev.txt            # pytest and dev tools
+├── VERSION                         # Current release version
 │
-├── 📚 Documentation
-│   ├── README.md                   # Comprehensive guide (EN/FA)
-│   ├── QUICKSTART.md              # 5-minute quick start guide
-│   ├── FEATURES.md                # Detailed feature documentation
-│   ├── EXAMPLES.md                # Usage examples and workflows
-│   ├── CHANGELOG.md               # Version history and changes
-│   └── PROJECT_STRUCTURE.md       # This file
+├── docs/                           # Structured documentation
+│   ├── ARCHITECTURE.md             # System design and data flows
+│   ├── INSTALLATION.md             # Setup and troubleshooting
+│   ├── API_MODULES.md              # Module reference
+│   └── INDEX_DIFF.md               # URL index diff guide (EN/FA)
 │
-├── 📂 src/                         # Source code modules
-│   ├── __init__.py                # Package initialization
-│   ├── data_loader.py             # Excel and sitemap loading
-│   ├── analyzer.py                # Search Console data analysis
-│   ├── ai_processor.py            # AI integration (multi-provider)
-│   ├── clustering.py              # Keyword clustering logic
-│   ├── excel_writer.py            # Excel output generation
-│   ├── sitemap_manager.py         # Interactive sitemap management
-│   ├── file_selector.py           # Interactive file selection
-│   └── page_scraper.py            # Web page SEO data scraping
+├── Documentation (root)
+│   ├── README.md                   # Main guide (EN/FA)
+│   ├── QUICKSTART.md               # 5-minute quick start
+│   ├── FEATURES.md                 # Feature documentation
+│   ├── EXAMPLES.md                 # Usage examples
+│   ├── CHANGELOG.md                # Version history
+│   └── PROJECT_STRUCTURE.md        # This file
 │
-├── 📂 input/                       # Input Excel files
-│   ├── .gitkeep                   # Preserves directory in git
-│   └── your_files.xlsx            # Place Search Console exports here
+├── src/
+│   ├── app/toolkit.py              # SeoToolkit application core
+│   ├── cli/                        # Banner, prompts, logging
+│   ├── services/                   # url_index_tracker, shared services
+│   ├── modes/                      # Mode dispatch helpers
+│   └── *.py                        # Domain modules (AI, sitemap, export, ...)
 │
-├── 📂 sitemaps/                    # Cached sitemap downloads
-│   ├── .gitkeep
-│   └── domain_hash.xml            # Auto-cached sitemaps
+├── web/                            # FastAPI dashboard and API
+│   ├── app/main.py
+│   ├── app/routers/
+│   ├── app/templates/
+│   └── requirements-web.txt
 │
-├── 📂 output/                      # Generated Excel reports
-│   ├── .gitkeep
-│   ├── improvements_*.xlsx        # Content improvement suggestions
-│   ├── new_content_*.xlsx         # New article ideas
-│   └── seo_data_*.xlsx            # Scraped SEO data
+├── tests/                          # pytest unit tests
 │
-├── 📂 logs/                        # Application logs
-│   ├── .gitkeep
-│   └── seo_optimizer.log          # Detailed execution logs
-│
-└── 📂 venv/                        # Virtual environment (gitignored)
-    └── ...                        # Python packages
+├── input/                          # Search Console Excel files
+├── sitemaps/                       # Cached sitemap XML
+├── output/                         # Reports, documents, index diff exports
+│   └── index_diff/                 # new_urls / already_submitted txt
+├── index_history/                  # Per-domain submitted URL tracking
+├── knowledge_base/                 # Per-project content memory
+└── logs/seo_toolkit.log            # Application log
 ```
 
 ---
@@ -246,7 +247,7 @@ seo_data_example.com.xlsx
 
 **Contents**:
 - `.gitkeep` - Preserves directory
-- `seo_optimizer.log` - Main application log
+- `seo_toolkit.log` - Main application log
 
 **Log Format**:
 ```
@@ -362,7 +363,7 @@ EXAMPLES.md             [original]
 - Location: `sitemaps/`
 
 ### Log Files
-- Main log: `seo_optimizer.log`
+- Main log: `seo_toolkit.log`
 - Location: `logs/`
 
 ---
@@ -400,7 +401,7 @@ User
 ## 🛠️ Maintenance
 
 ### Regular Tasks
-- Review `logs/seo_optimizer.log` for errors
+- Review `logs/seo_toolkit.log` for errors
 - Clean old files from `output/` periodically
 - Update dependencies: `pip install -r requirements.txt --upgrade`
 - Clear sitemap cache if URLs change: `rm sitemaps/*`

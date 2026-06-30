@@ -224,7 +224,7 @@ def test_sample_clustering(config: Dict):
 
 def main():
     """Main test function."""
-    print_header("SEO Content Optimizer - AI Connection Test")
+    print_header("Seo Toolkit - AI Connection Test")
     
     # Load configuration
     config = load_config()

@@ -48,10 +48,14 @@ sitemaps/
 !sitemaps/.gitkeep
 
 # Output files
-output/
+output/*
 !output/.gitkeep
+!output/content_generated/
 !output/content_generated/.gitkeep
+!output/documents/
 !output/documents/.gitkeep
+!output/index_diff/
+!output/index_diff/.gitkeep
 
 # Excel files (anywhere in project)
 *.xlsx
@@ -123,10 +127,19 @@ downloads/
 temp/
 tmp/
 
-# Generated content directories
-output/content_generated/
-output/documents/
+# Generated content directories (contents ignored, keep structure)
+output/content_generated/*
+!output/content_generated/.gitkeep
+output/documents/*
+!output/documents/.gitkeep
+output/index_diff/*
+!output/index_diff/.gitkeep
 
-# Keep .gitkeep files but ignore their contents
-!.gitkeep
+# Index history (submitted URLs per domain)
+index_history/*
+!index_history/.gitkeep
+
+# Git worktree metadata (local clone layout)
+.gitdir/
+
 

@@ -1,6 +1,6 @@
-# 🚀 Quick Start Guide
+# Quick Start Guide - Seo Toolkit
 
-Get up and running with the SEO Content Analysis & Optimization Tool in 5 minutes!
+Get up and running with Seo Toolkit in 5 minutes!
 
 ## 📋 Prerequisites
 
@@ -59,21 +59,22 @@ python3 main.py --mode scraping
 **Input:** Sitemap URL  
 **Output:** Complete SEO audit of all pages
 
-### Mode 3: AI Content Generation (Create Articles) ✨ NEW
+### Mode 6: URL Index Diff (new vs submitted URLs)
 ```bash
-python3 main.py --mode generation
+python3 main.py --mode index-diff --domain example.com
 ```
-**Input:** Excel files from Mode 1  
-**Output:** Complete SEO articles in Word & HTML
+**Input:** Sitemap URL + domain name  
+**Output:** `new_urls_*.txt` + `already_submitted_*.txt`
 
-## 📁 File Structure
+## File Structure
 
 ```
-SEOContentAnalysis/
-├── input/              # Put your Search Console Excel files here
-├── output/             # Generated files appear here
+seo-toolkit/
+├── input/              # Search Console Excel files
+├── output/             # Generated files
+├── index_history/      # Submitted URL tracking per domain
 ├── config.yaml         # Your API configuration
-└── main.py            # Run this file
+└── main.py             # Run this file
 ```
 
 ## 🔑 API Keys Setup

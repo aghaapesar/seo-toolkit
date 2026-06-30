@@ -1,6 +1,10 @@
-# Feature Documentation - SEO Content Optimizer v2.3.0
+# Feature Documentation - Seo Toolkit v2.5.0
 
-Comprehensive guide to all features and capabilities including AI Content Generation and Multi-Model Support.
+Comprehensive guide to all features including URL Index Diff, AI Content Generation, and Multi-Model Support.
+
+Repository: https://github.com/aghaapesar/seo-toolkit
+
+See also: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md)
 
 ---
 
@@ -20,7 +24,24 @@ Comprehensive guide to all features and capabilities including AI Content Genera
 
 ---
 
-## 🎮 Operational Modes
+## Operational Modes
+
+### Mode 6: URL Index Diff (NEW v2.5)
+
+**Purpose**: Compare a live sitemap against URLs already submitted to an indexing tool.
+
+**Input**: Domain name + sitemap URL (optional import txt)  
+**Output**: `new_urls_*.txt` and `already_submitted_*.txt` under `output/index_diff/`
+
+```bash
+python main.py --mode index-diff --domain example.com
+python main.py --mode index-diff --domain example.com --import old_urls.txt
+python main.py --mode index-diff --domain example.com --mark-submitted
+```
+
+**Storage**: `index_history/{domain}/history.json`
+
+See [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md) for full guide.
 
 ### Mode 1: Content Optimization
 
@@ -549,7 +570,7 @@ SEOContentAnalysis/
 │   └── seo_data_domain.xlsx
 ├── main.py
 ├── config.yaml
-└── seo_optimizer.log        # Detailed logs
+└── seo_toolkit.log        # Detailed logs
 ```
 
 **Benefits**:
@@ -850,11 +871,11 @@ Processing sitemaps: 100%|█████████████████| 5
 
 ### Log File
 
-**Location**: `seo_optimizer.log`
+**Location**: `seo_toolkit.log`
 
 **Format**:
 ```
-2025-10-11 14:32:15,123 - __main__ - INFO - SEO Content Optimizer initialized
+2025-10-11 14:32:15,123 - __main__ - INFO - Seo Toolkit initialized
 2025-10-11 14:32:20,456 - src.data_loader - INFO - Loaded 1000 queries
 2025-10-11 14:32:25,789 - src.sitemap_manager - INFO - Downloaded sitemap
 ```
@@ -870,10 +891,10 @@ Processing sitemaps: 100%|█████████████████| 5
 
 ```bash
 # View recent logs
-tail -f seo_optimizer.log
+tail -f seo_toolkit.log
 
 # Search for errors
-grep ERROR seo_optimizer.log
+grep ERROR seo_toolkit.log
 
 # View with verbose mode
 python3 main.py --mode content -v

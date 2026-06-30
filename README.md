@@ -1,11 +1,17 @@
-# SEO Content Analysis & Optimization Tool v2.4.0
+# Seo Toolkit v2.5.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
 2. **SEO Data Collection**: Scrape and audit page titles, meta descriptions, and SEO tags
-3. **AI Content Generation** ✨ NEW: Generate SEO-optimized content with multi-model AI support
+3. **AI Content Generation**: Generate SEO-optimized content with multi-model AI support
 4. **Internal Linking**: Smart internal linking with semantic analysis
 5. **Knowledge Base**: Track content history and avoid duplicates
+6. **URL Index Diff**: Separate new sitemap URLs from already-submitted indexing URLs
+7. **Web Dashboard**: FastAPI UI for index diff and API access
+
+Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/seo-toolkit)
+
+**Documentation:** [docs/INSTALLATION.md](docs/INSTALLATION.md) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md)
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Persian Optimized](https://img.shields.io/badge/Persian-Optimized-green.svg)]()
@@ -13,7 +19,33 @@ A powerful, interactive Python application optimized for **Persian/Farsi content
 
 ---
 
-## 🆕 What's New in v2.4.0
+## What's New in v2.5.0
+
+### Rebrand: Seo Toolkit
+- New project name and CLI branding
+- Refactored package layout (`src/app`, `src/cli`, `src/services`)
+- GitHub repository: `seo-toolkit`
+
+### Mode 6: URL Index Diff
+- Fetch sitemap URLs and diff against submission history
+- Export only **new** URLs for your indexing tool
+- Import previous txt batches with `--import`
+- Persist history per domain in `index_history/`
+
+```bash
+python main.py --mode index-diff --domain example.com
+python main.py --mode index-diff --domain example.com --import old_urls.txt
+```
+
+### Web UI (FastAPI)
+```bash
+pip install -r web/requirements-web.txt
+uvicorn web.app.main:app --reload --port 8000
+```
+
+---
+
+## What's New in v2.4.0
 
 ### 🔍 New Mode 5: Keyword Synonym Finder
 - ✅ **Find All Variations**: Discover all possible ways users might search for your keywords
@@ -228,7 +260,7 @@ Analyze existing content and find new opportunities
   - Automatic backup creation
   
 - **Test Mode**: Validate with 10-item limits before full run
-- **Comprehensive Logging**: Detailed logs saved to `seo_optimizer.log`
+- **Comprehensive Logging**: Detailed logs saved to `logs/seo_toolkit.log`
 - **Multiple AI Providers**: OpenAI, Azure, Anthropic, or compatible APIs
 
 ---
@@ -1056,7 +1088,7 @@ ls knowledge_base/example.com/
   - پشتیبان‌گیری خودکار
 
 - **حالت تست**: محدود به ۱۰ آیتم برای اعتبارسنجی
-- **گزارش‌دهی**: ذخیره logs در `seo_optimizer.log`
+- **گزارش‌دهی**: ذخیره logs در `logs/seo_toolkit.log`
 - **چند ارائه‌دهنده AI**: OpenAI، Azure، Anthropic، لیارا
 
 ---
