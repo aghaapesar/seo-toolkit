@@ -4,7 +4,7 @@ import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import yaml
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
@@ -262,46 +262,6 @@ def run_generation_info():
     return {
         "message": "Run after content mode produces Excel in output/.",
         "cli": "python main.py --mode generation",
-    }
-
-
-@router.post("/index-diff/import")
-async def index_diff_import(
-    domain: str = Form(...),
-    urls_files: List[UploadFile] = File(...),
-    project_slug: str = Form(""),
-):
-    """Import submitted URLs from one or more uploaded txt files."""
-    if not urls_files:
-        raise HTTPException(status_code=400, detail="At least one .txt file is required")
-
-    saved_paths: List[str] = []
-    for upload in urls_files:
-        if not upload.filename:
-            continue
-        saved_paths.append(str(_save_upload(upload, "import")))
-
-    if not saved_paths:
-        raise HTTPException(status_code=400, detail="No valid files received")
-
-    if project_slug:
-        project, paths = resolve_project_paths(project_slug)
-        tracker = UrlIndexTracker(
-            project.domain,
-            base_dir=str(paths.index_history_dir),
-            flat=True,
-        )
-        domain = project.domain
-    else:
-        tracker = UrlIndexTracker(domain)
-
-    result = tracker.import_from_txt_files(saved_paths)
-    return {
-        "domain": domain,
-        "added": result["total_added"],
-        "files_processed": result["files_processed"],
-        "files": result["files"],
-        "status": tracker.get_status(),
     }
 
 

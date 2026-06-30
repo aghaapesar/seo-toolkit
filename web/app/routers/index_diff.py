@@ -1,10 +1,12 @@
 """Index diff API router."""
 
+import shutil
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from src.services.url_index_tracker import UrlIndexTracker
@@ -12,6 +14,18 @@ from src.sitemap_manager import SitemapManager
 from web.app.routers.projects import resolve_project_paths
 
 router = APIRouter(prefix="/api/v1/index-diff", tags=["index-diff"])
+
+UPLOAD_DIR = Path("output/web_uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _save_upload(upload: UploadFile, prefix: str) -> Path:
+    """Persist uploaded file and return path."""
+    suffix = Path(upload.filename or "file").suffix or ".bin"
+    dest = UPLOAD_DIR / f"{prefix}_{uuid.uuid4().hex[:8]}{suffix}"
+    with open(dest, "wb") as out:
+        shutil.copyfileobj(upload.file, out)
+    return dest
 
 
 class DiffRequest(BaseModel):
@@ -43,14 +57,43 @@ def get_status(domain: str):
 
 
 @router.post("/import")
-def import_urls(domain: str = Form(...), file_path: str = Form(...)):
-    """Import previously submitted URLs from a server-local text file."""
-    tracker = UrlIndexTracker(domain)
-    try:
-        added = tracker.import_from_txt(file_path)
-    except FileNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    return {"domain": domain, "added": added, "status": tracker.get_status()}
+async def import_urls(
+    domain: str = Form(...),
+    urls_files: List[UploadFile] = File(...),
+    project_slug: str = Form(""),
+):
+    """Import submitted URLs from one or more uploaded txt files."""
+    if not urls_files:
+        raise HTTPException(status_code=400, detail="At least one .txt file is required")
+
+    saved_paths: List[str] = []
+    for upload in urls_files:
+        if not upload.filename:
+            continue
+        saved_paths.append(str(_save_upload(upload, "import")))
+
+    if not saved_paths:
+        raise HTTPException(status_code=400, detail="No valid files received")
+
+    if project_slug:
+        project, paths = resolve_project_paths(project_slug)
+        tracker = UrlIndexTracker(
+            project.domain,
+            base_dir=str(paths.index_history_dir),
+            flat=True,
+        )
+        domain = project.domain
+    else:
+        tracker = UrlIndexTracker(domain)
+
+    result = tracker.import_from_txt_files(saved_paths)
+    return {
+        "domain": domain,
+        "added": result["total_added"],
+        "files_processed": result["files_processed"],
+        "files": result["files"],
+        "status": tracker.get_status(),
+    }
 
 
 @router.post("/diff", response_model=DiffResponse)
