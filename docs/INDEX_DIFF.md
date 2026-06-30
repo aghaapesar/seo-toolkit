@@ -67,6 +67,8 @@ In the **Import previous URLs** section you can select **several `.txt` files at
 
 API: `POST /api/v1/index-diff/import` with multipart field `urls_files` (repeatable).
 
+Sitemap downloads use browser-like HTTP headers. If a site blocks bots, the API returns a detailed error (403, SSL, timeout).
+
 ---
 
 # راهنمای فارسی - تفکیک URL ایندکس

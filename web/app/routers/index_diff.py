@@ -10,8 +10,8 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from src.services.url_index_tracker import UrlIndexTracker
-from src.sitemap_manager import SitemapManager
 from web.app.routers.projects import resolve_project_paths
+from web.app.services.sitemap_fetch import fetch_all_sitemap_urls, normalize_sitemap_url
 
 router = APIRouter(prefix="/api/v1/index-diff", tags=["index-diff"])
 
@@ -104,15 +104,10 @@ def run_diff(payload: DiffRequest):
     Input: domain + sitemap URL.
     Output: counts and output file paths.
     """
-    manager = SitemapManager()
-    content = manager._download_with_retry(payload.sitemap_url, max_retries=3)
-    if not content:
-        raise HTTPException(status_code=502, detail="Failed to download sitemap")
-
-    urls, sub_sitemaps = manager._parse_sitemap_content(content)
-    if sub_sitemaps:
-        urls = manager._handle_sitemap_index(sub_sitemaps)
-
+    sitemap_url = normalize_sitemap_url(payload.sitemap_url)
+    urls, fetch_error = fetch_all_sitemap_urls(sitemap_url, max_retries=5, timeout=45)
+    if fetch_error:
+        raise HTTPException(status_code=502, detail=fetch_error)
     if not urls:
         raise HTTPException(status_code=404, detail="No URLs found in sitemap")
 

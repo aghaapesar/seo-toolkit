@@ -16,6 +16,18 @@ import time
 
 logger = logging.getLogger(__name__)
 
+# Browser-like headers — many sites block default python-requests User-Agent.
+DEFAULT_REQUEST_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/xml,text/xml,application/xhtml+xml,text/html;q=0.9,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9,fa;q=0.8",
+    "Accept-Encoding": "gzip, deflate",
+}
+
 
 class SitemapManager:
     """
@@ -39,6 +51,7 @@ class SitemapManager:
         """
         self.sitemap_dir = Path(sitemap_dir)
         self.sitemap_dir.mkdir(exist_ok=True)
+        self.last_download_error: Optional[str] = None
         logger.info(f"Sitemap directory: {self.sitemap_dir}")
     
     def _get_cache_filename(self, url: str) -> Path:
@@ -65,45 +78,66 @@ class SitemapManager:
         self,
         url: str,
         max_retries: int = 10,
-        timeout: int = 30
+        timeout: int = 30,
+        silent: bool = False,
     ) -> Optional[bytes]:
         """
         Download sitemap with retry logic.
-        
-        Args:
-            url: URL to download
-            max_retries: Maximum number of retry attempts
-            timeout: Timeout for each request in seconds
-            
-        Returns:
-            Downloaded content as bytes, or None if all retries failed
+
+        Input:
+            url: URL to download.
+            max_retries: Maximum retry attempts.
+            timeout: Per-request timeout in seconds.
+            silent: Skip console output (for web/API).
+
+        Output:
+            Response body bytes, or None if all attempts failed.
         """
-        print(f"\n📥 Downloading sitemap: {url}")
-        
+        self.last_download_error = None
+        url = url.strip()
+
+        if not silent:
+            print(f"\n📥 Downloading sitemap: {url}")
+
+        last_exc: Optional[Exception] = None
+
         for attempt in range(1, max_retries + 1):
             try:
-                print(f"   Attempt {attempt}/{max_retries}...", end=" ")
-                
-                response = requests.get(url, timeout=timeout)
+                if not silent:
+                    print(f"   Attempt {attempt}/{max_retries}...", end=" ")
+
+                response = requests.get(
+                    url,
+                    headers=DEFAULT_REQUEST_HEADERS,
+                    timeout=timeout,
+                    allow_redirects=True,
+                )
                 response.raise_for_status()
-                
-                print("✅ Success!")
+
+                if not silent:
+                    print("✅ Success!")
                 logger.info(f"Downloaded sitemap from {url} (attempt {attempt})")
                 return response.content
-                
-            except requests.RequestException as e:
-                print(f"❌ Failed: {str(e)[:50]}")
-                logger.warning(f"Download attempt {attempt} failed: {str(e)}")
-                
+
+            except requests.RequestException as exc:
+                last_exc = exc
+                self.last_download_error = f"{type(exc).__name__}: {exc}"
+                if not silent:
+                    print(f"❌ Failed: {str(exc)[:80]}")
+                logger.warning(
+                    f"Download attempt {attempt} failed for {url}: {self.last_download_error}"
+                )
+
                 if attempt < max_retries:
-                    # Exponential backoff
                     wait_time = min(2 ** attempt, 30)
-                    print(f"   Waiting {wait_time}s before retry...")
+                    if not silent:
+                        print(f"   Waiting {wait_time}s before retry...")
                     time.sleep(wait_time)
-                else:
+                elif not silent:
                     print(f"\n❌ All {max_retries} download attempts failed!")
-                    return None
-        
+
+        if last_exc is not None:
+            self.last_download_error = f"{type(last_exc).__name__}: {last_exc}"
         return None
     
     def _parse_sitemap_content(self, content: bytes) -> Tuple[List[str], List[str]]:
@@ -120,12 +154,17 @@ class SitemapManager:
             root = etree.fromstring(content)
             namespaces = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
             
-            # Extract URLs
+            # Extract URLs (namespace-aware + fallback for variant XML)
             urls = root.xpath('//ns:url/ns:loc/text()', namespaces=namespaces)
-            
-            # Extract sub-sitemaps (sitemap index)
             sub_sitemaps = root.xpath('//ns:sitemap/ns:loc/text()', namespaces=namespaces)
-            
+
+            if not urls:
+                urls = root.xpath('//*[local-name()="url"]/*[local-name()="loc"]/text()')
+            if not sub_sitemaps:
+                sub_sitemaps = root.xpath(
+                    '//*[local-name()="sitemap"]/*[local-name()="loc"]/text()'
+                )
+
             return urls, sub_sitemaps
             
         except etree.XMLSyntaxError as e:

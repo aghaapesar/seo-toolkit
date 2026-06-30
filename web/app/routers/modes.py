@@ -80,7 +80,9 @@ def run_scraping(
     Input: sitemap URL, optional test_mode (10 pages).
     Output: path to Excel audit file.
     """
-    urls = fetch_all_sitemap_urls(sitemap_url)
+    urls, fetch_error = fetch_all_sitemap_urls(sitemap_url)
+    if fetch_error:
+        raise HTTPException(status_code=502, detail=fetch_error)
     if not urls:
         raise HTTPException(status_code=404, detail="No URLs found in sitemap")
 
@@ -113,7 +115,9 @@ async def run_linking(
     Input: sitemap URL + HTML file upload.
     Output: linked HTML file path.
     """
-    urls = fetch_all_sitemap_urls(sitemap_url)
+    urls, fetch_error = fetch_all_sitemap_urls(sitemap_url)
+    if fetch_error:
+        raise HTTPException(status_code=502, detail=fetch_error)
     if not urls:
         raise HTTPException(status_code=404, detail="No URLs in sitemap")
 

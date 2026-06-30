@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.4 (2025-06-30)
+
+### Fix — sitemap download failures in web Index Diff
+- Browser-like `User-Agent` and headers for sitemap HTTP requests
+- Web diff uses non-interactive `fetch_all_sitemap_urls` (no CLI prompts on sitemap index)
+- Auto-fetch all sub-sitemaps from sitemap index
+- Namespace-agnostic XML parsing fallback
+- Detailed 502 error message (SSL, 403, timeout, etc.)
+
 ## v2.6.3 (2025-06-30)
 
 ### Fix — Index Diff import `[object Object]` error toast
