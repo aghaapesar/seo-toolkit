@@ -8,7 +8,7 @@ Seo Toolkit is a Python CLI and web-assisted SEO automation suite optimized for 
 main.py
   └── src/app/toolkit.py (SeoToolkit)
         ├── src/cli/          Interactive prompts and logging
-        ├── src/services/     Index diff and shared services
+        ├── src/services/     Index diff, project manager, shared services
         └── src/*.py          Domain modules (AI, sitemap, export, ...)
 ```
 
@@ -22,6 +22,20 @@ main.py
 | Internal linking | `--mode linking` | `internal_linker` |
 | Synonym finder | `--mode synonyms` | `synonym_finder`, `ai_model_manager` |
 | URL index diff | `--mode index-diff` | `sitemap_manager`, `url_index_tracker` |
+
+## Multi-Project (v2.6+)
+
+Use `--project {slug}` on CLI or the web project switcher. Each project stores data under `projects/{slug}/`:
+
+| Subfolder | Purpose |
+|-----------|---------|
+| `input/` | Search Console Excel |
+| `output/` | Reports, scrapes, exports |
+| `knowledge_base/` | Content history |
+| `index_history/` | Index diff submitted URLs |
+| `sitemaps/` | Cached sitemaps |
+
+Registry: `projects/registry.json`. See [MULTI_PROJECT.md](MULTI_PROJECT.md).
 
 ## Data Flow - Content Mode
 
@@ -57,8 +71,9 @@ main.py
 
 | Path | Purpose |
 |------|---------|
-| `knowledge_base/` | Per-project content history |
-| `index_history/` | Per-domain submitted URL tracking |
+| `projects/{slug}/` | Isolated per-project data (v2.6+) |
+| `knowledge_base/` | Global content history (legacy / no project) |
+| `index_history/` | Global per-domain URL tracking |
 | `sitemaps/` | Cached sitemap XML |
 | `output/` | Excel, documents, index diff exports |
 | `logs/seo_toolkit.log` | Application log |

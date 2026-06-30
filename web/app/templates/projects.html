@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block subheading %}{{ strings.projects_sub }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <h2>{{ strings.create_project }}</h2>
+    <form id="form-create-project" class="stack-form">
+      <label>
+        <span>{{ strings.project_name_label }}</span>
+        <input type="text" name="name" required placeholder="My Shop" />
+      </label>
+      <label>
+        <span>{{ strings.domain }}</span>
+        <input type="text" name="domain" required placeholder="example.com" />
+      </label>
+      <label>
+        <span>{{ strings.sitemap_url }}</span>
+        <input type="url" name="sitemap_url" placeholder="https://example.com/sitemap.xml" />
+      </label>
+      <label>
+        <span>{% if lang == 'fa' %}یادداشت{% else %}Notes{% endif %}</span>
+        <input type="text" name="notes" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg">{{ strings.create_project }}</button>
+    </form>
+    <div id="result-project" class="result-panel hidden"></div>
+  </section>
+
+  <aside class="panel panel-info">
+    <h3>{% if lang == 'fa' %}پروژه‌های موجود{% else %}Existing projects{% endif %}</h3>
+    {% if projects %}
+    <ul class="project-list">
+      {% for p in projects %}
+      <li class="project-item">
+        <strong>{{ p.name }}</strong>
+        <span class="muted">{{ p.domain }}</span>
+        <code>{{ p.slug }}</code>
+        <a href="/?lang={{ lang }}&project={{ p.slug }}" class="btn btn-ghost btn-sm set-project" data-slug="{{ p.slug }}">
+          {% if lang == 'fa' %}انتخاب{% else %}Select{% endif %}
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">{% if lang == 'fa' %}هنوز پروژه‌ای نیست — اولین پروژه را بسازید.{% else %}No projects yet — create your first one.{% endif %}</p>
+    {% endif %}
+    <p class="note">{% if lang == 'fa' %}هر پروژه: input، output، knowledge_base و index_history جدا دارد.{% else %}Each project gets separate input, output, knowledge_base, and index_history folders.{% endif %}</p>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}<script>initProjectsPage("{{ lang }}");</script>{% endblock %}

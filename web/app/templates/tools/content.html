@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
 {% block subheading %}{{ strings.content_desc }}{% endblock %}
 {% block content %}
 <div class="tool-layout">
@@ -8,13 +9,14 @@
     <p class="muted">{{ strings.content_desc }}</p>
 
     <form id="form-content" class="stack-form" enctype="multipart/form-data">
+      {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.project_name }}</span>
-        <input type="text" name="project_name" required placeholder="example.com" />
+        <input type="text" name="project_name" id="project-name-field" required placeholder="example.com" value="{{ active_project.domain if active_project else '' }}" />
       </label>
       <label>
         <span>{{ strings.sitemap_url }}</span>
-        <input type="url" name="sitemap_url" required placeholder="https://example.com/sitemap.xml" />
+        <input type="url" name="sitemap_url" id="sitemap-url-field" required placeholder="https://example.com/sitemap.xml" value="{{ active_project.sitemap_url if active_project else '' }}" />
       </label>
       <label>
         <span>{{ strings.upload_excel }}</span>

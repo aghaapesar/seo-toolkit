@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
 {% block subheading %}{{ strings.scraping_desc }}{% endblock %}
 {% block content %}
 <div class="tool-layout">
@@ -6,6 +7,7 @@
     <div class="panel-badge g-blue">Mode 2</div>
     <h2>{% if lang == 'fa' %}ممیزی متادیتای صفحات{% else %}Page Metadata Audit{% endif %}</h2>
     <form id="form-scraping" class="stack-form">
+      {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.sitemap_url }}</span>
         <input type="url" name="sitemap_url" required placeholder="https://example.com/sitemap.xml" />

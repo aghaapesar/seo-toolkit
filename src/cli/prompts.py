@@ -121,3 +121,57 @@ def select_mode_interactive() -> str:
         if choice in mapping:
             return mapping[choice]
         print("Invalid choice. Please enter 1, 2, 3, 4, 5, or 6.")
+
+
+def select_project_interactive(manager) -> "Project":
+    """
+    Select or create a project interactively.
+
+    Input:
+        manager: ProjectManager instance.
+
+    Output:
+        Selected Project.
+    """
+    from src.services.project_manager import Project
+
+    projects = manager.list_projects()
+
+    print("\n" + "=" * 70)
+    print("PROJECT SELECTION")
+    print("=" * 70)
+
+    if projects:
+        print("\nExisting projects:")
+        for idx, project in enumerate(projects, 1):
+            print(f"  [{idx}] {project.name} ({project.domain}) — {project.slug}")
+        print(f"\n  [N] Create new project")
+        print("-" * 70)
+
+        while True:
+            choice = input("\nSelect project number or N: ").strip().lower()
+            if choice in ("n", "new"):
+                break
+            try:
+                num = int(choice)
+                if 1 <= num <= len(projects):
+                    selected = projects[num - 1]
+                    print(f"Using project: {selected.name}")
+                    return selected
+            except ValueError:
+                pass
+            print("Invalid selection.")
+
+    # Create new project
+    print("\nCreate a new project (data will be stored separately per project)")
+    while True:
+        name = input("Project name: ").strip()
+        domain = input("Domain (e.g. example.com): ").strip()
+        sitemap = input("Sitemap URL (optional): ").strip()
+        if len(name) >= 2 and len(domain) >= 3:
+            try:
+                return manager.create_project(name, domain, sitemap)
+            except ValueError as exc:
+                print(f"Error: {exc}")
+        else:
+            print("Name and domain are required.")

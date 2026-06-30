@@ -142,4 +142,8 @@ index_history/*
 # Git worktree metadata (local clone layout)
 .gitdir/
 
+# Multi-project data (per-project folders; registry stays local)
+projects/*
+!projects/.gitkeep
+
 

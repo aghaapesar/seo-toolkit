@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
 
-from web.app.i18n import page_context, t
+from web.app.i18n import get_lang, page_context, t
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
@@ -57,4 +57,14 @@ def settings_page(request: Request):
     title = t(lang, "nav_settings")
     return TEMPLATES.TemplateResponse(
         request, "settings.html", page_context(request, title, tool_id=None)
+    )
+
+
+@router.get("/projects", response_class=HTMLResponse)
+def projects_page(request: Request):
+    """Project management page."""
+    lang = get_lang(request)
+    title = t(lang, "nav_projects")
+    return TEMPLATES.TemplateResponse(
+        request, "projects.html", page_context(request, title, tool_id=None)
     )

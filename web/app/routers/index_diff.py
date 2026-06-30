@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 from src.services.url_index_tracker import UrlIndexTracker
 from src.sitemap_manager import SitemapManager
+from web.app.routers.projects import resolve_project_paths
 
 router = APIRouter(prefix="/api/v1/index-diff", tags=["index-diff"])
 
@@ -19,6 +20,7 @@ class DiffRequest(BaseModel):
     domain: str = Field(..., min_length=3)
     sitemap_url: str
     mark_submitted: bool = False
+    project_slug: Optional[str] = None
 
 
 class DiffResponse(BaseModel):
@@ -72,10 +74,20 @@ def run_diff(payload: DiffRequest):
         raise HTTPException(status_code=404, detail="No URLs found in sitemap")
 
     tracker = UrlIndexTracker(payload.domain)
+    if payload.project_slug:
+        project, paths = resolve_project_paths(payload.project_slug)
+        tracker = UrlIndexTracker(
+            project.domain,
+            base_dir=str(paths.index_history_dir),
+            flat=True,
+        )
+        output_dir = paths.output_dir / "index_diff"
+    else:
+        output_dir = Path("output") / "index_diff" / tracker._sanitize_name(payload.domain)
+
     new_urls, already_urls = tracker.diff(urls)
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = Path("output") / "index_diff" / tracker._sanitize_name(payload.domain)
     new_file = tracker.export_txt(new_urls, output_dir / f"new_urls_{stamp}.txt")
     already_file = tracker.export_txt(
         already_urls, output_dir / f"already_submitted_{stamp}.txt"

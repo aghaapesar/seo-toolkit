@@ -18,7 +18,7 @@ from tqdm import tqdm
 from src.ai_model_manager import AIModelManager
 from src.ai_processor import AIProcessor
 from src.analyzer import SearchConsoleAnalyzer
-from src.cli.prompts import get_project_name_interactive, print_banner
+from src.cli.prompts import get_project_name_interactive, print_banner, select_project_interactive
 from src.cli.sections import print_section
 from src.clustering import KeywordClusterer
 from src.content_generator import ContentGenerator
@@ -29,6 +29,7 @@ from src.file_selector import FileSelector
 from src.internal_linker import InternalLinker
 from src.knowledge_base import KnowledgeBase
 from src.page_scraper import PageScraper
+from src.services.project_manager import Project, ProjectManager, ProjectPaths
 from src.services.url_index_tracker import UrlIndexTracker
 from src.sitemap_manager import SitemapManager
 from src.synonym_finder import SynonymFinder
@@ -41,15 +42,21 @@ class SeoToolkit:
     Main application class for Seo Toolkit workflows.
     """
 
-    def __init__(self, config_path: str = "config.yaml"):
+    def __init__(self, config_path: str = "config.yaml", project_slug: Optional[str] = None):
         """
         Initialize Seo Toolkit.
         
         Args:
             config_path: Path to YAML configuration file
+            project_slug: Optional active project slug for isolated data
         """
         # Load configuration
         self.config = self._load_config(config_path)
+        
+        # Project management
+        self.project_manager = ProjectManager()
+        self.active_project: Optional[Project] = None
+        self.active_paths: Optional[ProjectPaths] = None
         
         # Initialize core components
         self.data_loader = DataLoader(self.config)
@@ -58,15 +65,61 @@ class SeoToolkit:
         self.clusterer = KeywordClusterer(self.config)
         self.excel_writer = ExcelWriter(self.config)
         
-        # Initialize new interactive components
+        # Initialize interactive components
         self.sitemap_manager = SitemapManager()
         self.file_selector = FileSelector()
         self.page_scraper = PageScraper()
         
-        # Knowledge base will be initialized per project
         self.knowledge_base = None
         
+        if project_slug:
+            self.set_project(project_slug, interactive=False)
+        
         logger.info("Seo Toolkit initialized successfully")
+
+    def set_project(self, slug: Optional[str] = None, interactive: bool = True) -> Project:
+        """
+        Set active project and rebind path-scoped services.
+
+        Input:
+            slug: Project slug or None to pick interactively.
+            interactive: Allow interactive selection when slug missing.
+
+        Output:
+            Active Project instance.
+        """
+        if slug:
+            project = self.project_manager.get_project(slug)
+            if not project:
+                print(f"\nProject not found: {slug}")
+                sys.exit(1)
+        elif interactive:
+            project = select_project_interactive(self.project_manager)
+        else:
+            raise ValueError("Project slug required")
+
+        paths = self.project_manager.get_paths(project.slug)
+        paths.ensure()
+
+        self.active_project = project
+        self.active_paths = paths
+        self.sitemap_manager = SitemapManager(sitemap_dir=str(paths.sitemaps_dir))
+        self.file_selector = FileSelector(input_dir=str(paths.input_dir))
+        self.page_scraper = PageScraper(output_dir=str(paths.output_dir))
+        self.excel_writer.output_dir = paths.output_dir
+        self.excel_writer.output_dir.mkdir(exist_ok=True)
+
+        print(f"\nActive project: {project.name} ({project.slug})")
+        print(f"  Data folder: {paths.root}")
+        return project
+
+    def _ensure_project(self, slug: Optional[str] = None) -> Project:
+        """Return active or newly selected project."""
+        if slug:
+            return self.set_project(slug, interactive=False)
+        if self.active_project:
+            return self.active_project
+        return self.set_project(interactive=True)
     
     def _load_config(self, config_path: str) -> Dict:
         """
@@ -115,14 +168,16 @@ class SeoToolkit:
         print_banner()
         print("📊 MODE: Content Optimization & Analysis")
         
-        # Get project name for knowledge base
-        project_name = get_project_name_interactive()
+        project = self._ensure_project()
         
-        # Initialize knowledge base for this project
-        self.knowledge_base = KnowledgeBase(project_name)
-        logger.info(f"🧠 Knowledge Base initialized for project: {project_name}")
+        self.knowledge_base = KnowledgeBase(
+            project.name,
+            base_dir=str(self.active_paths.knowledge_base_dir),
+            flat=True,
+        )
+        logger.info(f"Knowledge Base initialized for project: {project.slug}")
         
-        print(f"🧠 Knowledge Base: {project_name}")
+        print(f"🧠 Knowledge Base: {project.name}")
         
         # Show knowledge base statistics
         kb_stats = self.knowledge_base.get_statistics()
@@ -140,7 +195,11 @@ class SeoToolkit:
             
             # Step 2: Get sitemap configuration
             print_section("Sitemap Configuration", "2/7")
-            sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
+            if project.sitemap_url:
+                print(f"Using project sitemap: {project.sitemap_url}")
+                sitemap_url = project.sitemap_url
+            else:
+                sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
             sitemap_urls = self.sitemap_manager.download_and_parse_sitemap(sitemap_url)
             
             if not sitemap_urls:
@@ -390,13 +449,19 @@ class SeoToolkit:
         print_banner()
         print("🔍 MODE: SEO Data Collection (Page Scraping)")
         
+        self._ensure_project()
+        
         if test_mode:
             print("🧪 TEST MODE ENABLED: Will scrape only 10 pages\n")
         
         try:
             # Step 1: Get sitemap configuration
             print_section("Sitemap Configuration", "1/2")
-            sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
+            if self.active_project and self.active_project.sitemap_url:
+                sitemap_url = self.active_project.sitemap_url
+                print(f"Using project sitemap: {sitemap_url}")
+            else:
+                sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
             sitemap_urls = self.sitemap_manager.download_and_parse_sitemap(sitemap_url)
             
             if not sitemap_urls:
@@ -471,7 +536,8 @@ class SeoToolkit:
             
             # Step 3: Get project information
             print_section("Project Information", "3/6")
-            project_name = get_project_name_interactive()
+            project = self._ensure_project()
+            project_name = project.name
             
             # Step 4: Select AI model for content generation
             print_section("Select AI Model for Content Generation", "4/6")
@@ -927,6 +993,7 @@ class SeoToolkit:
         domain: Optional[str] = None,
         import_file: Optional[str] = None,
         mark_submitted: bool = False,
+        project_slug: Optional[str] = None,
     ) -> None:
         """
         Compare sitemap URLs against previously submitted indexing URLs.
@@ -943,11 +1010,21 @@ class SeoToolkit:
         print("MODE: URL Index Diff")
 
         try:
-            if not domain:
+            if project_slug or self.project_manager.list_projects():
+                project = self._ensure_project(project_slug)
+                domain = project.domain
+                paths = self.active_paths
+                tracker = UrlIndexTracker(
+                    project.domain,
+                    base_dir=str(paths.index_history_dir),
+                    flat=True,
+                )
+            elif not domain:
                 print_section("Domain / Project", "1/4")
                 domain = get_project_name_interactive()
-
-            tracker = UrlIndexTracker(domain)
+                tracker = UrlIndexTracker(domain)
+            else:
+                tracker = UrlIndexTracker(domain)
 
             if import_file:
                 added = tracker.import_from_txt(import_file)
@@ -960,7 +1037,14 @@ class SeoToolkit:
             print(f"Last sitemap fetch: {status['last_sitemap_fetch'] or 'never'}")
 
             print_section("Sitemap Fetch", "3/4")
-            sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
+            if project_slug or (self.active_project and self.active_project.sitemap_url):
+                sitemap_url = self.active_project.sitemap_url
+                if not sitemap_url:
+                    sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
+                else:
+                    print(f"Using project sitemap: {sitemap_url}")
+            else:
+                sitemap_url = self.sitemap_manager.get_sitemap_url_interactive()
             current_urls = self.sitemap_manager.download_and_parse_sitemap(sitemap_url)
 
             if not current_urls:
@@ -975,7 +1059,10 @@ class SeoToolkit:
             print(f"Already submitted: {len(already_urls)}")
 
             stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            output_dir = Path("output") / "index_diff" / tracker._sanitize_name(domain)
+            if self.active_paths:
+                output_dir = self.active_paths.output_dir / "index_diff"
+            else:
+                output_dir = Path("output") / "index_diff" / tracker._sanitize_name(domain)
             new_file = tracker.export_txt(
                 new_urls, output_dir / f"new_urls_{stamp}.txt"
             )

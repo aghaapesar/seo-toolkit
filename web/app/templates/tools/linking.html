@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
 {% block subheading %}{{ strings.linking_desc }}{% endblock %}
 {% block content %}
 <div class="tool-layout">
@@ -6,9 +7,10 @@
     <div class="panel-badge g-amber">Mode 4</div>
     <h2>{% if lang == 'fa' %}لینک داخلی هوشمند{% else %}Smart Internal Links{% endif %}</h2>
     <form id="form-linking" class="stack-form" enctype="multipart/form-data">
+      {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.sitemap_url }}</span>
-        <input type="url" name="sitemap_url" required />
+        <input type="url" name="sitemap_url" id="sitemap-url-field" required value="{{ active_project.sitemap_url if active_project else '' }}" />
       </label>
       <label>
         <span>{{ strings.upload_html }}</span>

@@ -16,6 +16,7 @@ from src.page_scraper import PageScraper
 from src.services.url_index_tracker import UrlIndexTracker
 from src.synonym_finder import SynonymFinder
 from web.app.routers import index_diff
+from web.app.routers.projects import resolve_project_paths
 from web.app.services.sitemap_fetch import fetch_all_sitemap_urls
 
 router = APIRouter(prefix="/api/v1", tags=["modes"])
@@ -71,6 +72,7 @@ class SynonymsResponse(BaseModel):
 def run_scraping(
     sitemap_url: str = Form(...),
     test_mode: bool = Form(False),
+    project_slug: str = Form(""),
 ):
     """
     Scrape SEO metadata for all sitemap URLs.
@@ -86,6 +88,9 @@ def run_scraping(
         urls = urls[:10]
 
     scraper = PageScraper()
+    if project_slug:
+        _, paths = resolve_project_paths(project_slug)
+        scraper = PageScraper(output_dir=str(paths.output_dir))
     output_file = scraper.scrape_urls_batch(
         urls=urls, sitemap_url=sitemap_url, test_mode=test_mode, non_interactive=True
     )
@@ -100,6 +105,7 @@ def run_scraping(
 async def run_linking(
     sitemap_url: str = Form(...),
     html_file: UploadFile = File(...),
+    project_slug: str = Form(""),
 ):
     """
     Add internal links to uploaded HTML using sitemap URLs.
@@ -116,14 +122,21 @@ async def run_linking(
     linker = InternalLinker(urls)
     linked = linker.add_internal_links(content)
 
-    out = saved.parent / f"{saved.stem}_linked.html"
+    if project_slug:
+        _, paths = resolve_project_paths(project_slug)
+        out = paths.output_dir / f"{saved.stem}_linked.html"
+    else:
+        out = saved.parent / f"{saved.stem}_linked.html"
     out.write_text(linked, encoding="utf-8")
 
     return LinkingResponse(output_file=str(out), sitemap_url_count=len(urls))
 
 
 @router.post("/synonyms", response_model=SynonymsResponse)
-async def run_synonyms(excel_file: UploadFile = File(...)):
+async def run_synonyms(
+    excel_file: UploadFile = File(...),
+    project_slug: str = Form(""),
+):
     """
     Find keyword synonyms from uploaded Excel (column 1).
 
@@ -143,11 +156,16 @@ async def run_synonyms(excel_file: UploadFile = File(...)):
         )
 
     saved = _save_upload(excel_file, "synonyms")
+    if project_slug:
+        _, paths = resolve_project_paths(project_slug)
+        output_dir = str(paths.output_dir / "synonyms")
+    else:
+        output_dir = "output/synonyms"
     finder = SynonymFinder(config)
     output = finder.process_excel_file(
         excel_path=str(saved),
         ai_model=model,
-        output_dir="output/synonyms",
+        output_dir=output_dir,
     )
     return SynonymsResponse(output_file=str(output), model=model.name)
 
@@ -167,6 +185,7 @@ async def content_upload(
     sitemap_url: str = Form(...),
     test_mode: bool = Form(True),
     excel_file: UploadFile = File(...),
+    project_slug: str = Form(""),
 ):
     """
     Save Search Console Excel and return CLI command for full AI analysis.
@@ -175,14 +194,22 @@ async def content_upload(
     Output: saved path and recommended CLI command.
     """
     saved = _save_upload(excel_file, "content")
-    dest = Path("input") / saved.name
-    dest.parent.mkdir(exist_ok=True)
-    shutil.copy(saved, dest)
+    if project_slug:
+        _, paths = resolve_project_paths(project_slug)
+        dest = paths.input_dir / saved.name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(saved, dest)
+        project_flag = f" --project {project_slug}"
+    else:
+        dest = Path("input") / saved.name
+        dest.parent.mkdir(exist_ok=True)
+        shutil.copy(saved, dest)
+        project_flag = ""
     flag = " --test" if test_mode else ""
     return {
         "message": "File saved to input/. Run CLI for full AI analysis.",
         "saved_path": str(dest),
-        "cli": f"python main.py --mode content{flag}",
+        "cli": f"python main.py --mode content{flag}{project_flag}",
         "project_name": project_name,
         "sitemap_url": sitemap_url,
     }
@@ -192,18 +219,25 @@ async def content_upload(
 async def generation_upload(
     project_name: str = Form(...),
     excel_file: UploadFile = File(None),
+    project_slug: str = Form(""),
 ):
     """Save generation Excel and return CLI instructions."""
     path_msg = ""
+    project_flag = f" --project {project_slug}" if project_slug else ""
     if excel_file and excel_file.filename:
         saved = _save_upload(excel_file, "generation")
-        out = Path("output") / saved.name
+        if project_slug:
+            _, paths = resolve_project_paths(project_slug)
+            out = paths.output_dir / saved.name
+        else:
+            out = Path("output") / saved.name
+        out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(saved, out)
         path_msg = str(out)
     return {
         "message": "Use CLI for interactive AI generation with model selection.",
         "saved_path": path_msg,
-        "cli": "python main.py --mode generation",
+        "cli": f"python main.py --mode generation{project_flag}",
         "project_name": project_name,
     }
 
@@ -235,10 +269,20 @@ def run_generation_info():
 async def index_diff_import(
     domain: str = Form(...),
     urls_file: UploadFile = File(...),
+    project_slug: str = Form(""),
 ):
     """Import submitted URLs from uploaded txt file."""
     saved = _save_upload(urls_file, "import")
-    tracker = UrlIndexTracker(domain)
+    if project_slug:
+        project, paths = resolve_project_paths(project_slug)
+        tracker = UrlIndexTracker(
+            project.domain,
+            base_dir=str(paths.index_history_dir),
+            flat=True,
+        )
+        domain = project.domain
+    else:
+        tracker = UrlIndexTracker(domain)
     added = tracker.import_from_txt(str(saved))
     return {"domain": domain, "added": added, "status": tracker.get_status()}
 

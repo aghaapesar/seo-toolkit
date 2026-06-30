@@ -9,7 +9,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from src import __version__
-from web.app.routers import health, index_diff, modes, pages
+from web.app.routers import health, index_diff, modes, pages, projects
 
 logger = logging.getLogger(__name__)
 BASE_DIR = Path(__file__).resolve().parent
@@ -39,4 +39,5 @@ app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 app.include_router(health.router)
 app.include_router(index_diff.router)
 app.include_router(modes.router)
+app.include_router(projects.router)
 app.include_router(pages.router)

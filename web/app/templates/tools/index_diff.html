@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
 {% block subheading %}{{ strings.index_diff_desc }}{% endblock %}
 {% block content %}
 <div class="tool-layout">
@@ -6,13 +7,14 @@
     <div class="panel-badge g-cyan">Mode 6</div>
     <h2>{% if lang == 'fa' %}URL جدید vs ارسال‌شده{% else %}New vs Submitted URLs{% endif %}</h2>
     <form id="form-index-diff" class="stack-form">
+      {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.domain }}</span>
-        <input type="text" name="domain" required placeholder="example.com" />
+        <input type="text" name="domain" id="domain-field" required placeholder="example.com" value="{{ active_project.domain if active_project else '' }}" />
       </label>
       <label>
         <span>{{ strings.sitemap_url }}</span>
-        <input type="url" name="sitemap_url" required />
+        <input type="url" name="sitemap_url" id="sitemap-field" required value="{{ active_project.sitemap_url if active_project else '' }}" />
       </label>
       <label class="checkbox-row">
         <input type="checkbox" name="mark_submitted" />

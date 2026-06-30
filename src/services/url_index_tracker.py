@@ -43,17 +43,21 @@ class UrlIndexTracker:
         index_history/{domain}/history.json
     """
 
-    def __init__(self, domain: str, base_dir: str = "index_history") -> None:
+    def __init__(self, domain: str, base_dir: str = "index_history", flat: bool = False) -> None:
         """
         Initialize tracker for a domain.
 
         Input:
             domain: Site domain or project identifier.
             base_dir: Root directory for persisted history.
+            flat: When True, use base_dir directly (per-project folder).
         """
         self.domain = domain
         self.base_dir = Path(base_dir)
-        self.project_dir = self.base_dir / self._sanitize_name(domain)
+        if flat:
+            self.project_dir = self.base_dir
+        else:
+            self.project_dir = self.base_dir / self._sanitize_name(domain)
         self.project_dir.mkdir(parents=True, exist_ok=True)
         self.history_file = self.project_dir / "history.json"
         self._data = self._load_history()

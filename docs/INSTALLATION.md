@@ -37,7 +37,15 @@ pip install -r web/requirements-web.txt
 uvicorn web.app.main:app --reload --port 8000
 ```
 
-Open http://127.0.0.1:8000
+Open http://127.0.0.1:8000 — use **Projects** in the sidebar to create sites and switch between them.
+
+## Multi-Project
+
+See [MULTI_PROJECT.md](MULTI_PROJECT.md). Quick example:
+
+```bash
+python main.py --mode index-diff --project my-shop
+```
 
 ## Troubleshooting
 

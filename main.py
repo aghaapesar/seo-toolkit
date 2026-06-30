@@ -47,6 +47,11 @@ Examples:
         help="Operational mode",
     )
     parser.add_argument(
+        "--project",
+        type=str,
+        help="Active project slug (isolated data per project)",
+    )
+    parser.add_argument(
         "--config",
         type=str,
         default="config.yaml",
@@ -96,7 +101,7 @@ def main() -> None:
         sys.exit(1)
 
     mode = args.mode or select_mode_interactive()
-    toolkit = SeoToolkit(config_path=args.config)
+    toolkit = SeoToolkit(config_path=args.config, project_slug=args.project)
 
     if mode == "content":
         toolkit.run_content_optimization(test_mode=args.test)
@@ -113,6 +118,7 @@ def main() -> None:
             domain=args.domain,
             import_file=args.import_file,
             mark_submitted=args.mark_submitted,
+            project_slug=args.project,
         )
 
 

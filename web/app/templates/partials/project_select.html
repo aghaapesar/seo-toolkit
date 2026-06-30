@@ -1,0 +1,13 @@
+{% macro project_select(lang, strings, projects, active_project) %}
+{% if projects %}
+<label>
+  <span>{{ strings.select_project }}</span>
+  <select name="project_slug" class="project-select">
+    <option value="">{{ strings.no_project }}</option>
+    {% for p in projects %}
+    <option value="{{ p.slug }}" {% if active_project and active_project.slug == p.slug %}selected{% endif %}>{{ p.name }} ({{ p.domain }})</option>
+    {% endfor %}
+  </select>
+</label>
+{% endif %}
+{% endmacro %}

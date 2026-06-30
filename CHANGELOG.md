@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.0 (2025-06-30)
+
+### Multi-project support
+- Define multiple projects with isolated data folders under `projects/{slug}/`
+- Each project: separate `input/`, `output/`, `knowledge_base/`, `index_history/`, `sitemaps/`
+- CLI: `--project my-slug` flag on all modes
+- Web: `/projects` page, project switcher in header, per-tool project select
+- API: `GET/POST /api/v1/projects`
+- Docs: `docs/MULTI_PROJECT.md`, updated `ARCHITECTURE.md` and `API_MODULES.md`
+
 ## v2.5.1 (2025-06-30)
 
 ### Web UI overhaul

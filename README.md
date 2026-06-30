@@ -1,4 +1,4 @@
-# Seo Toolkit v2.5.0
+# Seo Toolkit v2.6.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -7,17 +7,31 @@ A powerful, interactive Python application optimized for **Persian/Farsi content
 4. **Internal Linking**: Smart internal linking with semantic analysis
 5. **Knowledge Base**: Track content history and avoid duplicates
 6. **URL Index Diff**: Separate new sitemap URLs from already-submitted indexing URLs
-7. **Web Dashboard**: FastAPI UI for index diff and API access
+7. **Web Dashboard**: FastAPI UI for all modes (EN/FA)
+8. **Multi-Project**: Run 3+ sites with isolated `input/`, `output/`, and index history
 
 Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/seo-toolkit)
 
-**Documentation:** [docs/INSTALLATION.md](docs/INSTALLATION.md) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md)
+**Documentation:** [docs/INSTALLATION.md](docs/INSTALLATION.md) | [docs/MULTI_PROJECT.md](docs/MULTI_PROJECT.md) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md)
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Persian Optimized](https://img.shields.io/badge/Persian-Optimized-green.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
+
+## What's New in v2.6.0
+
+### Multi-Project Support
+- Manage multiple sites with **separate data** under `projects/{slug}/`
+- CLI: `--project my-slug` on every mode
+- Web: `/projects` page + header project switcher
+- See [docs/MULTI_PROJECT.md](docs/MULTI_PROJECT.md)
+
+```bash
+python main.py --mode index-diff --project shop-a
+python main.py --mode content --test --project blog-b
+```
 
 ## What's New in v2.5.0
 

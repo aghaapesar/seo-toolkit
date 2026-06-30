@@ -34,20 +34,23 @@ class KnowledgeBase:
     - Content recommendations history
     """
     
-    def __init__(self, project_name: str, base_dir: str = "knowledge_base"):
+    def __init__(self, project_name: str, base_dir: str = "knowledge_base", flat: bool = False):
         """
         Initialize knowledge base for a specific project.
         
         Args:
             project_name: Name of the project (e.g., website domain)
             base_dir: Base directory for knowledge base storage
+            flat: When True, use base_dir directly (multi-project layout)
         """
         self.project_name = project_name
         self.base_dir = Path(base_dir)
         self.base_dir.mkdir(exist_ok=True)
         
-        # Create project-specific directory
-        self.project_dir = self.base_dir / self._sanitize_name(project_name)
+        if flat:
+            self.project_dir = self.base_dir
+        else:
+            self.project_dir = self.base_dir / self._sanitize_name(project_name)
         self.project_dir.mkdir(exist_ok=True)
         
         # File paths

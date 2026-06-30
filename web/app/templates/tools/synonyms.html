@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
 {% block subheading %}{{ strings.synonyms_desc }}{% endblock %}
 {% block content %}
 <div class="tool-layout">
@@ -6,6 +7,7 @@
     <div class="panel-badge g-rose">Mode 5</div>
     <h2>{% if lang == 'fa' %}مترادف و variation کلیدواژه{% else %}Keyword Variations{% endif %}</h2>
     <form id="form-synonyms" class="stack-form" enctype="multipart/form-data">
+      {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.upload_excel }}</span>
         <input type="file" name="excel_file" accept=".xlsx,.xls" required class="file-input" />

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
 {% block subheading %}{{ strings.generation_desc }}{% endblock %}
 {% block content %}
 <div class="tool-layout">
@@ -7,9 +8,10 @@
     <h2>{% if lang == 'fa' %}تولید مقاله با AI{% else %}AI Article Generation{% endif %}</h2>
     <p class="muted">{{ strings.generation_desc }}</p>
     <form id="form-generation" class="stack-form" enctype="multipart/form-data">
+      {{ project_select(lang, strings, projects, active_project) }}
       <label>
         <span>{{ strings.project_name }}</span>
-        <input type="text" name="project_name" required />
+        <input type="text" name="project_name" id="project-name-field" value="{{ active_project.domain if active_project else '' }}" required />
       </label>
       <label>
         <span>{% if lang == 'fa' %}Excel خروجی Mode 1 (output/){% else %}Mode 1 output Excel{% endif %}</span>

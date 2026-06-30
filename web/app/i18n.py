@@ -16,6 +16,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "nav_synonyms": "Synonym Finder",
         "nav_index_diff": "Index Diff",
         "nav_settings": "Settings",
+        "nav_projects": "Projects",
         "nav_api": "API Docs",
         "lang_en": "English",
         "lang_fa": "فارسی",
@@ -52,6 +53,14 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "features": "All tools",
         "result_files": "Output files",
         "cli_hint": "Advanced workflows also available via CLI:",
+        "projects_title": "Projects",
+        "projects_sub": "Manage separate sites with isolated data folders.",
+        "create_project": "Create project",
+        "project_name_label": "Project name",
+        "select_project": "Active project",
+        "no_project": "— No project —",
+        "project_created": "Project created",
+        "project_data_path": "Data folder",
     },
     "fa": {
         "app_name": "Seo Toolkit",
@@ -64,6 +73,7 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "nav_synonyms": "مترادف‌یاب",
         "nav_index_diff": "تفکیک ایندکس",
         "nav_settings": "تنظیمات",
+        "nav_projects": "پروژه‌ها",
         "nav_api": "مستندات API",
         "lang_en": "English",
         "lang_fa": "فارسی",
@@ -100,6 +110,14 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "features": "همه ابزارها",
         "result_files": "فایل‌های خروجی",
         "cli_hint": "جریان‌های پیشرفته از CLI هم در دسترس است:",
+        "projects_title": "پروژه‌ها",
+        "projects_sub": "چند سایت را با داده جدا مدیریت کنید.",
+        "create_project": "ساخت پروژه",
+        "project_name_label": "نام پروژه",
+        "select_project": "پروژه فعال",
+        "no_project": "— بدون پروژه —",
+        "project_created": "پروژه ساخته شد",
+        "project_data_path": "پوشه داده",
     },
 }
 
@@ -181,8 +199,14 @@ def t(lang: str, key: str) -> str:
 def page_context(request, page_title: str, **extra: Any) -> Dict[str, Any]:
     """Build standard template context."""
     from src import __version__
+    from src.services.project_manager import ProjectManager
 
     lang = get_lang(request)
+    manager = ProjectManager()
+    projects = manager.list_projects()
+    active_slug = request.query_params.get("project") or request.cookies.get("active_project")
+    active_project = manager.get_project(active_slug) if active_slug else None
+
     return {
         "lang": lang,
         "dir": "rtl" if lang == "fa" else "ltr",
@@ -192,6 +216,9 @@ def page_context(request, page_title: str, **extra: Any) -> Dict[str, Any]:
         "version": __version__,
         "config_exists": Path_exists_config(),
         "tool_id": extra.pop("tool_id", None),
+        "projects": projects,
+        "active_project": active_project,
+        "active_project_slug": active_slug or "",
         **extra,
     }
 
