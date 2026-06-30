@@ -20,6 +20,26 @@ function toast(msg, type = "info") {
   setTimeout(() => el.classList.add("hidden"), 4000);
 }
 
+/** Turn FastAPI / fetch error payloads into a readable string. */
+function formatApiError(data, fallback = "Request failed") {
+  const detail = data?.detail ?? data?.message ?? data;
+  if (!detail) return fallback;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (item?.msg) return item.msg;
+        return JSON.stringify(item);
+      })
+      .join(" · ");
+  }
+  if (typeof detail === "object") {
+    return detail.msg || detail.message || JSON.stringify(detail);
+  }
+  return String(detail);
+}
+
 function showResult(containerId, html) {
   const box = document.getElementById(containerId);
   if (!box) return;
@@ -39,7 +59,7 @@ async function postForm(url, form, lang) {
   toast(t(lang, "processing"));
   const res = await fetch(url, { method: "POST", body: new FormData(form) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.detail || res.statusText);
+  if (!res.ok) throw new Error(formatApiError(data, res.statusText));
   return data;
 }
 
@@ -177,7 +197,7 @@ function initIndexDiffForm(lang, importLabels = {}) {
       body: JSON.stringify(body),
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || res.statusText);
+    if (!res.ok) throw new Error(formatApiError(data, res.statusText));
     showResult(
       "result-index-diff",
       resultCard(lg, {
@@ -204,14 +224,18 @@ function initIndexDiffForm(lang, importLabels = {}) {
     if (!fileInputEl?.files?.length) {
       throw new Error(importLabels.noFiles || (lg === "fa" ? "حداقل یک فایل txt انتخاب کنید" : "Select at least one .txt file"));
     }
-    const fd = new FormData(form);
+    const fd = new FormData();
+    fd.append("domain", domainInput.value);
+    for (const file of fileInputEl.files) {
+      fd.append("urls_files", file);
+    }
     if (main?.project_slug?.value) {
-      fd.set("project_slug", main.project_slug.value);
+      fd.append("project_slug", main.project_slug.value);
     }
     toast(t(lg, "processing"));
     const res = await fetch("/api/v1/index-diff/import", { method: "POST", body: fd });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.detail || res.statusText);
+    if (!res.ok) throw new Error(formatApiError(data, res.statusText));
 
     const fileRows = (data.files || [])
       .map((f) => {
@@ -240,7 +264,7 @@ function initContentForm(lang) {
     toast(t(lg, "processing"));
     const res = await fetch("/api/v1/content/upload", { method: "POST", body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || res.statusText);
+    if (!res.ok) throw new Error(formatApiError(data, res.statusText));
     showResult(
       "result-content",
       `<div class="result-success">
@@ -261,7 +285,7 @@ function initGenerationForm(lang) {
     toast(t(lg, "processing"));
     const res = await fetch("/api/v1/generation/upload", { method: "POST", body: fd });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || res.statusText);
+    if (!res.ok) throw new Error(formatApiError(data, res.statusText));
     showResult(
       "result-generation",
       `<div class="result-success"><pre class="cli-box">${data.cli}</pre><p>${data.message}</p></div>`

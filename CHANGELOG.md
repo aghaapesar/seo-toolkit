@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.3 (2025-06-30)
+
+### Fix — Index Diff import `[object Object]` error toast
+- Parse FastAPI validation errors (`detail` array) into readable messages
+- Build multipart FormData explicitly for multiple txt files
+
 ## v2.6.2 (2025-06-30)
 
 ### Fix — Index Diff page 500 error
