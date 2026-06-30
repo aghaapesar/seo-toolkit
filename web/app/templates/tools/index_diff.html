@@ -35,6 +35,13 @@
         <button type="submit" class="btn btn-ghost">{{ strings.import_submit }}</button>
       </form>
       <div id="result-index-import" class="result-panel hidden"></div>
+      <div id="index-diff-import-labels" class="sr-only"
+        data-import-hint="{{ strings.import_txt_hint | default('', true) }}"
+        data-files-selected="{{ strings.import_files_selected | default('', true) }}"
+        data-no-files="{{ strings.import_no_files | default('', true) }}"
+        data-total-added="{{ strings.import_total_added | default('', true) }}"
+        data-files-processed="{{ strings.import_files_processed | default('', true) }}">
+      </div>
     </details>
 
     <div id="result-index-diff" class="result-panel hidden"></div>
@@ -46,12 +53,16 @@
 {% endblock %}
 {% block scripts %}
 <script>
-  initIndexDiffForm("{{ lang }}", {
-    importHint: {{ strings.import_txt_hint | tojson }},
-    filesSelected: {{ strings.import_files_selected | tojson }},
-    noFiles: {{ ('حداقل یک فایل txt انتخاب کنید' if lang == 'fa' else 'Select at least one .txt file') | tojson }},
-    totalAdded: {{ ('مجموع URL جدید' if lang == 'fa' else 'Total new URLs') | tojson }},
-    filesProcessed: {{ ('فایل پردازش‌شده' if lang == 'fa' else 'Files processed') | tojson }},
-  });
+  (function () {
+    const labelsEl = document.getElementById("index-diff-import-labels");
+    const ds = labelsEl ? labelsEl.dataset : {};
+    initIndexDiffForm("{{ lang }}", {
+      importHint: ds.importHint || "",
+      filesSelected: ds.filesSelected || "",
+      noFiles: ds.noFiles || "",
+      totalAdded: ds.totalAdded || "",
+      filesProcessed: ds.filesProcessed || "",
+    });
+  })();
 </script>
 {% endblock %}

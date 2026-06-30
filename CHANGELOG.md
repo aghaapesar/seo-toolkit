@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.2 (2025-06-30)
+
+### Fix — Index Diff page 500 error
+- Removed fragile `tojson` in template (caused `Undefined is not JSON serializable` on stale reload)
+- Import labels passed via `data-*` attributes with safe defaults
+
 ## v2.6.1 (2025-06-30)
 
 ### Index Diff — multi-file import (web)
