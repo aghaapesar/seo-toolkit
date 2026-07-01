@@ -49,11 +49,11 @@
     newUrls: {{ strings.new_urls | tojson }},
     already: {{ strings.already | tojson }},
     error: {{ strings.error | tojson }},
-    filesTitle: {{ strings.export_files_title | tojson }},
-    filesHint: {{ strings.export_files_hint | tojson }},
-    statusIndexed: {{ strings.url_status_indexed | tojson }},
-    statusPending: {{ strings.url_status_pending | tojson }},
-    statusExcluded: {{ strings.url_status_excluded | tojson }},
+    filesTitle: {{ strings.export_files_title | default('', true) | tojson }},
+    filesHint: {{ strings.export_files_hint | default('', true) | tojson }},
+    statusIndexed: {{ strings.url_status_indexed | default('', true) | tojson }},
+    statusPending: {{ strings.url_status_pending | default('', true) | tojson }},
+    statusExcluded: {{ strings.url_status_excluded | default('', true) | tojson }},
   };
 </script>
 <script src="/static/tasks.js"></script>

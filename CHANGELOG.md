@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.9.1 (2025-07-01)
+
+### Fix — task page 500 (Undefined is not JSON serializable)
+- Safe i18n merge (EN fallback) for template strings
+- `default` filter on task page `tojson` labels
+
 ## v2.9.0 (2025-07-01)
 
 ### Index Diff — downloadable file list and URL status archive

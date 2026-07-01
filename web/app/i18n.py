@@ -290,6 +290,13 @@ def t(lang: str, key: str) -> str:
     return STRINGS.get(lang, STRINGS["en"]).get(key, key)
 
 
+def strings_for(lang: str) -> Dict[str, str]:
+    """Merge EN baseline with locale strings so templates never get Undefined."""
+    merged = dict(STRINGS["en"])
+    merged.update(STRINGS.get(lang, {}))
+    return merged
+
+
 def page_context(request, page_title: str, **extra: Any) -> Dict[str, Any]:
     """Build standard template context."""
     from src import __version__
@@ -305,7 +312,7 @@ def page_context(request, page_title: str, **extra: Any) -> Dict[str, Any]:
         "lang": lang,
         "dir": "rtl" if lang == "fa" else "ltr",
         "page_title": page_title,
-        "strings": STRINGS[lang],
+        "strings": strings_for(lang),
         "tools": TOOLS,
         "version": __version__,
         "config_exists": Path_exists_config(),
