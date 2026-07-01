@@ -34,6 +34,12 @@
     </div>
 
     <details class="import-block" open>
+      <summary>{{ strings.export_files_title }}</summary>
+      <p class="muted file-hint">{{ strings.export_files_hint }}</p>
+      <div id="index-export-files" class="export-files-panel muted">{{ strings.export_files_empty }}</div>
+    </details>
+
+    <details class="import-block" open>
       <summary>{{ strings.import_urls }}</summary>
       <form id="form-index-import" class="stack-form" enctype="multipart/form-data">
         <input type="hidden" name="domain" id="import_domain" />
@@ -86,7 +92,9 @@
       data-index-pending="{{ strings.index_pending_count | default('', true) }}"
       data-index-last-fetch="{{ strings.index_last_fetch | default('', true) }}"
       data-index-no-pending="{{ strings.index_no_pending | default('', true) }}"
-      data-index-status-title="{{ strings.index_status_title | default('', true) }}">
+      data-index-status-title="{{ strings.index_status_title | default('', true) }}"
+      data-no-exports="{{ strings.export_files_empty | default('', true) }}"
+      data-run-summary="{{ strings.export_run_summary | default('', true) }}">
     </div>
   </section>
   <aside class="panel panel-info">
@@ -119,6 +127,8 @@
       indexLastFetch: ds.indexLastFetch || "",
       indexNoPending: ds.indexNoPending || "",
       indexStatusTitle: ds.indexStatusTitle || "",
+      noExports: ds.noExports || "",
+      runSummary: ds.runSummary || "",
     });
   })();
 </script>

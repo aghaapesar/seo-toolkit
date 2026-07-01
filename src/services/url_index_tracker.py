@@ -82,6 +82,7 @@ class UrlIndexTracker:
             "sitemap_snapshot": None,
             "last_pending_batch": None,
             "diff_exclusions": [],
+            "export_runs": [],
         }
 
     def _load_history(self) -> Dict:
@@ -96,6 +97,7 @@ class UrlIndexTracker:
         data.setdefault("sitemap_snapshot", None)
         data.setdefault("last_pending_batch", None)
         data.setdefault("diff_exclusions", [])
+        data.setdefault("export_runs", [])
         return data
 
     def _save_history(self) -> None:
@@ -404,6 +406,123 @@ class UrlIndexTracker:
         )
         self._save_history()
         return batch_id
+
+    def archive_url_status(
+        self,
+        sitemap_urls: List[str],
+        new_urls: List[str],
+        already_urls: List[str],
+        output_dir: Path,
+        run_id: str,
+    ) -> Dict:
+        """
+        Archive per-URL status and register export files for download.
+
+        Input:
+            sitemap_urls: Full sitemap URL list from latest fetch.
+            new_urls: URLs needing index submission.
+            already_urls: URLs already indexed or excluded.
+            output_dir: Directory for diff txt exports.
+            run_id: Timestamp stamp for this run.
+
+        Output:
+            Metadata dict with file paths and download kinds.
+        """
+        submitted_norm = self.load_submitted_urls()
+        exclusion_raw = {normalize_url(u) for u in self._data.get("diff_exclusions", [])}
+        pending_raw = {
+            normalize_url(u)
+            for u in (self._data.get("last_pending_batch") or {}).get("urls", [])
+        }
+        new_norm = {normalize_url(u) for u in new_urls}
+
+        status_dir = self.project_dir / "url_status"
+        status_dir.mkdir(parents=True, exist_ok=True)
+        archive_json = status_dir / f"url_status_{run_id}.json"
+        archive_csv = status_dir / f"url_status_{run_id}.csv"
+        latest_json = self.project_dir / "url_status_latest.json"
+        latest_csv = self.project_dir / "url_status_latest.csv"
+
+        rows: List[Dict] = []
+        for raw in self._dedupe_urls(sitemap_urls):
+            normalized = normalize_url(raw)
+            if normalized in pending_raw or normalized in new_norm:
+                status = "pending_index"
+            elif normalized in exclusion_raw and normalized not in submitted_norm:
+                status = "excluded"
+            elif normalized in submitted_norm:
+                status = "indexed"
+            else:
+                status = "unknown"
+
+            rows.append(
+                {
+                    "url": raw.strip(),
+                    "status": status,
+                    "run_id": run_id,
+                    "updated_at": datetime.now().isoformat(),
+                }
+            )
+
+        payload = {
+            "run_id": run_id,
+            "domain": self.domain,
+            "created_at": datetime.now().isoformat(),
+            "counts": {
+                "total": len(rows),
+                "pending_index": sum(1 for r in rows if r["status"] == "pending_index"),
+                "indexed": sum(1 for r in rows if r["status"] == "indexed"),
+                "excluded": sum(1 for r in rows if r["status"] == "excluded"),
+            },
+            "urls": rows,
+        }
+
+        for target in (archive_json, latest_json):
+            with open(target, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle, ensure_ascii=False, indent=2)
+
+        for target in (archive_csv, latest_csv):
+            with open(target, "w", encoding="utf-8") as handle:
+                handle.write("url,status,run_id,updated_at\n")
+                for row in rows:
+                    url_escaped = row["url"].replace(",", "%2C")
+                    handle.write(
+                        f"{url_escaped},{row['status']},{row['run_id']},{row['updated_at']}\n"
+                    )
+
+        snapshot = self._data.get("sitemap_snapshot") or {}
+        run_record = {
+            "run_id": run_id,
+            "created_at": payload["created_at"],
+            "counts": {
+                "total": len(sitemap_urls),
+                "new": len(new_urls),
+                "already": len(already_urls),
+                **payload["counts"],
+            },
+            "files": {
+                "new_urls": str(output_dir / f"new_urls_{run_id}.txt"),
+                "already_submitted": str(output_dir / f"already_submitted_{run_id}.txt"),
+                "url_status_json": str(archive_json),
+                "url_status_csv": str(archive_csv),
+                "url_status_latest_json": str(latest_json),
+                "url_status_latest_csv": str(latest_csv),
+                "sitemap_latest": snapshot.get("latest_file"),
+                "sitemap_archive": snapshot.get("archive_file"),
+            },
+        }
+
+        runs: List[Dict] = self._data.setdefault("export_runs", [])
+        runs.append(run_record)
+        self._data["export_runs"] = runs[-50:]
+        self._save_history()
+        return run_record
+
+    def list_export_runs(self) -> List[Dict]:
+        """Return registered export runs newest first."""
+        runs = list(self._data.get("export_runs", []))
+        runs.reverse()
+        return runs
 
     def export_txt(self, urls: List[str], output_path: Path) -> Path:
         """

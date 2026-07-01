@@ -22,10 +22,11 @@
     <ol class="task-steps" id="task-steps" aria-live="polite"></ol>
 
     <div id="task-result" class="result-panel hidden"></div>
+    <div id="task-export-files" class="export-files-panel hidden"></div>
     <div id="task-error" class="result-panel result-error hidden"></div>
 
     <div class="task-actions">
-      <a href="/tools/index-diff?lang={{ lang }}" class="btn btn-ghost" id="task-back-link">{{ strings.back_to_tool }}</a>
+      <a href="/tools/index-diff?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}" class="btn btn-ghost" id="task-back-link">{{ strings.back_to_tool }}</a>
     </div>
   </section>
 </div>
@@ -48,6 +49,11 @@
     newUrls: {{ strings.new_urls | tojson }},
     already: {{ strings.already | tojson }},
     error: {{ strings.error | tojson }},
+    filesTitle: {{ strings.export_files_title | tojson }},
+    filesHint: {{ strings.export_files_hint | tojson }},
+    statusIndexed: {{ strings.url_status_indexed | tojson }},
+    statusPending: {{ strings.url_status_pending | tojson }},
+    statusExcluded: {{ strings.url_status_excluded | tojson }},
   };
 </script>
 <script src="/static/tasks.js"></script>

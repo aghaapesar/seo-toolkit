@@ -207,6 +207,48 @@ function syncProjectSelects() {
   });
 }
 
+function renderDownloadFiles(files, downloadLabel = "Download") {
+  if (!files?.length) return "";
+  const rows = files
+    .map(
+      (f) => `<tr>
+        <td>${f.label || f.name}</td>
+        <td class="muted">${f.name}</td>
+        <td><a class="btn btn-ghost btn-sm" href="${f.download_url}" download>${downloadLabel}</a></td>
+      </tr>`
+    )
+    .join("");
+  return `<table class="file-table"><thead><tr><th>File</th><th>Name</th><th></th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+async function loadIndexDiffExports(domain, projectSlug, containerId, labels, lg) {
+  const box = document.getElementById(containerId);
+  if (!box || !domain) return;
+  const qs = projectSlug ? `?project_slug=${encodeURIComponent(projectSlug)}` : "";
+  try {
+    const res = await fetch(`/api/v1/index-diff/files/${encodeURIComponent(domain)}${qs}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.runs?.length) {
+      box.innerHTML = `<p class="muted">${labels.noExports || "No exports yet"}</p>`;
+      return;
+    }
+    const downloadLabel = t(lg, "download");
+    const blocks = data.runs
+      .map((run) => {
+        const counts = run.counts || {};
+        return `<div class="export-run-block">
+          <h4>${run.run_id} <span class="muted">${(run.created_at || "").slice(0, 16).replace("T", " ")}</span></h4>
+          <p class="muted">${labels.runSummary || "Summary"}: ${counts.new ?? 0} ${labels.newUrls || "new"} / ${counts.total ?? 0} ${labels.total || "total"}</p>
+          ${renderDownloadFiles(run.downloads, downloadLabel)}
+        </div>`;
+      })
+      .join("");
+    box.innerHTML = blocks;
+  } catch (_) {
+    box.innerHTML = `<p class="muted">${labels.noExports || "No exports yet"}</p>`;
+  }
+}
+
 function setActiveProject(slug) {
   if (slug) {
     document.cookie = `active_project=${encodeURIComponent(slug)};path=/;max-age=31536000`;
@@ -410,9 +452,7 @@ async function runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, s
       [lg === "fa" ? "مجموع" : "Total"]: data.total,
       [lg === "fa" ? "جدید" : "New"]: data.new_count,
       [lg === "fa" ? "قبلی" : "Submitted"]: data.already_count,
-      "new.txt": data.new_file,
-      "done.txt": data.already_file,
-    })
+    }) + (data.files?.length ? `<div class="export-files-wrap"><h4>${t(lg, "download")}</h4>${renderDownloadFiles(data.files, t(lg, "download"))}</div>` : "")
   );
   toast(doneMsg, "success");
   const { domain, projectSlug } = indexDiffContext(form);
@@ -434,6 +474,18 @@ function initIndexDiffForm(lang, importLabels = {}) {
     sel.addEventListener("change", () => setTimeout(refreshStatus, 300));
   });
   refreshStatus();
+  loadIndexDiffExports(
+    mainForm?.domain?.value,
+    getActiveProjectSlug(),
+    "index-export-files",
+    importLabels,
+    lang
+  );
+
+  mainForm?.domain?.addEventListener("change", () => {
+    refreshStatus();
+    loadIndexDiffExports(mainForm.domain.value, getActiveProjectSlug(), "index-export-files", importLabels, lang);
+  });
 
   const fileInput = document.getElementById("import-txt-files");
   const fileHint = document.getElementById("import-file-hint");

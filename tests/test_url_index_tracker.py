@@ -97,6 +97,27 @@ def test_import_without_mark_adds_diff_exclusions(tmp_path):
     assert new_urls == ["https://example.com/new"]
     assert already == ["https://example.com/old"]
 
+
+def test_archive_url_status_creates_files(tmp_path):
+    """Archive should write url_status csv/json and register export run."""
+    tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path))
+    output_dir = tmp_path / "out"
+    output_dir.mkdir()
+    new_urls, already = tracker.diff(["https://example.com/a", "https://example.com/b"])
+    tracker.set_last_pending_batch(new_urls, "new_urls_test.txt")
+    run = tracker.archive_url_status(
+        ["https://example.com/a", "https://example.com/b"],
+        new_urls,
+        already,
+        output_dir,
+        "20260101_120000",
+    )
+    assert run["counts"]["pending_index"] == 2
+    assert (tracker.project_dir / "url_status" / "url_status_20260101_120000.csv").exists()
+    assert tracker.list_export_runs()[0]["run_id"] == "20260101_120000"
+
+
+def test_export_txt_writes_one_url_per_line(tmp_path):
     """Export should create newline-delimited URL file."""
     tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path))
     out = tracker.export_txt(

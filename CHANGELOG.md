@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.9.0 (2025-07-01)
+
+### Index Diff — downloadable file list and URL status archive
+- Each diff run registers all output files with download links
+- `url_status.csv` / `.json` per run — status: indexed, pending_index, excluded
+- Export history on Index Diff page and task completion page
+- `GET /api/v1/index-diff/files/{domain}` and `/download?path=`
+
 ## v2.8.0 (2025-07-01)
 
 ### Index Diff — sitemap snapshots, batch marking, sticky project

@@ -7,10 +7,12 @@ from pathlib import Path
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from src.services.url_index_tracker import UrlIndexTracker
 from web.app.routers.projects import resolve_project_paths
+from web.app.services.file_download import flatten_run_files, resolve_download_path
 from web.app.services.sitemap_fetch import (
     fetch_all_sitemap_urls,
     normalize_sitemap_url,
@@ -76,6 +78,20 @@ class DiffResponse(BaseModel):
     batch_id: Optional[str] = None
     sitemap_snapshot: Optional[dict] = None
     pending_batch_count: int = 0
+    run_id: Optional[str] = None
+    files: List[dict] = Field(default_factory=list)
+
+
+FILE_KIND_LABELS = {
+    "new_urls": "new_urls.txt",
+    "already_submitted": "already_submitted.txt",
+    "url_status_json": "url_status.json",
+    "url_status_csv": "url_status.csv",
+    "url_status_latest_json": "url_status_latest.json",
+    "url_status_latest_csv": "url_status_latest.csv",
+    "sitemap_latest": "sitemap_latest.txt",
+    "sitemap_archive": "sitemap_archive.txt",
+}
 
 
 def _execute_diff(
@@ -112,6 +128,9 @@ def _execute_diff(
     elif new_urls:
         tracker.set_last_pending_batch(new_urls, source_file=str(new_file))
 
+    run_meta = tracker.archive_url_status(urls, new_urls, already_urls, output_dir, stamp)
+    download_files = flatten_run_files(run_meta, FILE_KIND_LABELS)
+
     status = tracker.get_status()
     return DiffResponse(
         domain=domain,
@@ -123,7 +142,49 @@ def _execute_diff(
         batch_id=batch_id,
         sitemap_snapshot=status.get("sitemap_snapshot") or tracker._data.get("sitemap_snapshot"),
         pending_batch_count=status.get("pending_batch_count", 0),
+        run_id=stamp,
+        files=download_files,
     )
+
+
+@router.get("/download")
+def download_export_file(path: str):
+    """
+    Download an export file by repo-relative path.
+
+    Input:
+        path: Relative path under output/, projects/, or index_history/.
+
+    Output:
+        File download response.
+    """
+    try:
+        file_path = resolve_download_path(path)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return FileResponse(
+        path=str(file_path),
+        filename=file_path.name,
+        media_type="application/octet-stream",
+    )
+
+
+@router.get("/files/{domain}")
+def list_export_files(domain: str, project_slug: str = ""):
+    """List archived export runs and downloadable files for a domain/project."""
+    tracker, domain, _ = _resolve_tracker(domain, project_slug or None)
+    runs = []
+    for run in tracker.list_export_runs():
+        runs.append(
+            {
+                **run,
+                "downloads": flatten_run_files(run, FILE_KIND_LABELS),
+            }
+        )
+    return {
+        "domain": domain,
+        "runs": runs,
+    }
 
 
 @router.get("/status/{domain}")

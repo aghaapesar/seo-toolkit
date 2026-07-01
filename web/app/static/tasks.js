@@ -47,9 +47,13 @@ function setTaskUi(labels, job) {
 function showTaskResult(labels, job) {
   const box = document.getElementById("task-result");
   const title = document.getElementById("task-title");
+  const exportsBox = document.getElementById("task-export-files");
   if (!box || !job.result) return;
 
   const r = job.result;
+  const lg = document.body.dataset.lang || "fa";
+  const downloadLabel = typeof t === "function" ? t(lg, "download") : "Download";
+
   if (title) title.textContent = labels.doneTitle;
   box.innerHTML = `
     <div class="result-success task-done-card">
@@ -58,10 +62,17 @@ function showTaskResult(labels, job) {
       <div class="result-row"><span>${labels.total}</span><strong>${r.total}</strong></div>
       <div class="result-row"><span>${labels.newUrls}</span><strong>${r.new_count}</strong></div>
       <div class="result-row"><span>${labels.already}</span><strong>${r.already_count}</strong></div>
-      <div class="result-row"><span>new.txt</span><strong>${r.new_file}</strong></div>
-      <div class="result-row"><span>done.txt</span><strong>${r.already_file}</strong></div>
     </div>`;
   box.classList.remove("hidden");
+
+  if (exportsBox && r.files?.length && typeof renderDownloadFiles === "function") {
+    exportsBox.innerHTML = `
+      <h3>${labels.filesTitle || "Download files"}</h3>
+      <p class="muted">${labels.filesHint || ""}</p>
+      ${renderDownloadFiles(r.files, downloadLabel)}`;
+    exportsBox.classList.remove("hidden");
+  }
+
   toast(labels.doneTitle, "success");
 }
 
