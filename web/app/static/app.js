@@ -206,7 +206,20 @@ function initIndexDiffForm(lang, importLabels = {}) {
     }
 
     toast(t(lg, "processing"));
-    const res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
+    let res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
+    // Fallback for stale server without /diff-form (pre v2.6.5)
+    if (res.status === 404 && sitemapUrl && !hasFile) {
+      res = await fetch("/api/v1/index-diff/diff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          domain: form.domain.value,
+          sitemap_url: sitemapUrl,
+          mark_submitted: form.mark_submitted.checked,
+          project_slug: form.project_slug?.value || null,
+        }),
+      });
+    }
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
     showResult(

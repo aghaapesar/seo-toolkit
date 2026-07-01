@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.7 (2025-07-01)
+
+### Fix — Index Diff `Not Found` (404)
+- Stale uvicorn missed `/api/v1/index-diff/diff-form`; restart with `./scripts/run_web.sh`
+- Web UI falls back to JSON `/diff` if `/diff-form` returns 404
+
 ## v2.6.6 (2025-07-01)
 
 ### Fix — sitemap download when curl works but Python fails
