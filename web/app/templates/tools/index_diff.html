@@ -96,12 +96,21 @@
       data-index-no-pending="{{ strings.index_no_pending | default('', true) }}"
       data-index-status-title="{{ strings.index_status_title | default('', true) }}"
       data-no-exports="{{ strings.export_files_empty | default('', true) }}"
-      data-run-summary="{{ strings.export_run_summary | default('', true) }}">
+      data-run-summary="{{ strings.export_run_summary | default('', true) }}"
+      data-sitemap-not-fetched="{{ strings.sitemap_not_fetched | default('', true) }}"
+      data-sitemap-root="{{ strings.sitemap_root | default('', true) }}"
+      data-sitemap-sub="{{ strings.sitemap_sub | default('', true) }}"
+      data-sitemap-sources="{{ strings.sitemap_sources_count | default('', true) }}"
+      data-sitemap-sources-list="{{ strings.sitemap_sources_list | default('', true) }}"
+      data-sitemap-url-preview="{{ strings.sitemap_url_preview | default('', true) }}"
+      data-sitemap-preview-more="{{ strings.sitemap_preview_more | default('', true) }}">
     </div>
   </section>
-  <aside class="panel panel-info">
+  <aside class="panel panel-info panel-info-stack">
     <h3 class="panel-info-title">{{ strings.index_status_title }}</h3>
     <div id="index-status" class="status-box muted">{{ strings.status_idle }}</div>
+    <h3 class="panel-info-title">{{ strings.sitemap_fetched_title }}</h3>
+    <div id="sitemap-view-panel" class="status-box sitemap-view-box muted">{{ strings.sitemap_not_fetched }}</div>
   </aside>
 </div>
 {% endblock %}
@@ -133,6 +142,13 @@
       indexStatusTitle: ds.indexStatusTitle || "",
       noExports: ds.noExports || "",
       runSummary: ds.runSummary || "",
+      sitemapNotFetched: ds.sitemapNotFetched || "",
+      sitemapRoot: ds.sitemapRoot || "",
+      sitemapSub: ds.sitemapSub || "",
+      sitemapSources: ds.sitemapSources || "",
+      sitemapSourcesList: ds.sitemapSourcesList || "",
+      sitemapUrlPreview: ds.sitemapUrlPreview || "",
+      sitemapPreviewMore: ds.sitemapPreviewMore || "",
     });
   })();
 </script>

@@ -28,21 +28,18 @@ function toast(msg, type = "info", persist = false) {
 function setIndexDiffProgress(lg, labels, message, active) {
   const panel = document.getElementById("index-diff-progress");
   const text = document.getElementById("index-diff-progress-text");
-  const status = document.getElementById("index-status");
   const btn = document.getElementById("index-diff-submit");
   if (panel) panel.classList.toggle("hidden", !active);
-  if (text && message) text.textContent = message;
-  if (status && message) {
-    status.textContent = message;
-    status.classList.toggle("muted", !active);
-    status.classList.toggle("status-active", active);
-  }
+  if (text) text.textContent = active ? message || "" : "";
   if (btn) {
-    btn.disabled = active;
-    btn.classList.toggle("is-loading", active);
+    btn.disabled = !!active;
+    btn.classList.toggle("is-loading", !!active);
   }
   if (active && message) {
     toast(message, "info", true);
+  } else if (!active && toastHideTimer) {
+    const el = document.getElementById("toast");
+    if (el) el.classList.add("hidden");
   }
 }
 
@@ -78,11 +75,13 @@ async function fetchTextWithTimeout(url, timeoutMs = 60000) {
 async function expandSitemapInBrowser(entryUrl, onProgress) {
   const visited = new Set();
   const collected = [];
+  const sources = [];
 
   async function walk(url, depth = 0) {
     const absolute = resolveSitemapUrl(entryUrl, url);
     if (!absolute || visited.has(absolute)) return;
     visited.add(absolute);
+    sources.push(absolute);
 
     const text = await fetchSitemapText(absolute);
     const parsed = parseSitemapXmlText(text);
@@ -102,7 +101,10 @@ async function expandSitemapInBrowser(entryUrl, onProgress) {
 
   onProgress?.("main", entryUrl);
   await walk(entryUrl);
-  return [...new Set(collected)];
+  return {
+    urls: [...new Set(collected)],
+    sources: [...new Set(sources)],
+  };
 }
 
 function resolveSitemapUrl(baseUrl, loc) {
@@ -323,31 +325,80 @@ function initProjectSelect() {
   });
 }
 
+async function tryFetchSitemapInBrowser(url) {
+  const { urls } = await expandSitemapInBrowser(url);
+  if (!urls.length) throw new Error("No URLs in sitemap");
+  return urlsToTxtBlob(urls);
+}
+
+function renderSitemapViewPanel(view, labels, lg) {
+  const downloadLabel = t(lg, "download");
+  if (!view?.has_snapshot) {
+    return `<p class="muted">${labels.sitemapNotFetched || "No sitemap fetched yet — run diff first."}</p>`;
+  }
+
+  const sources = (view.sitemap_sources || [])
+    .map(
+      (u, i) =>
+        `<li><a href="${u}" target="_blank" rel="noopener">${i === 0 ? labels.sitemapRoot || "Root" : labels.sitemapSub || "Sub"} ${i + 1}</a><span class="muted sitemap-src">${u}</span></li>`
+    )
+    .join("");
+
+  const preview = (view.urls_preview || [])
+    .map((u) => `<li class="url-preview-item"><code>${u}</code></li>`)
+    .join("");
+
+  const more =
+    view.url_count > (view.urls_preview || []).length
+      ? `<p class="muted">${labels.sitemapPreviewMore || "…and more"} (${view.url_count} ${labels.total || "total"})</p>`
+      : "";
+
+  const downloads = (view.downloads || []).length
+    ? renderDownloadFiles(view.downloads, downloadLabel)
+    : "";
+
+  return `
+    <div class="result-row"><span>${labels.indexSitemap || "Sitemap URLs"}</span><strong>${view.url_count || 0}</strong></div>
+    <div class="result-row"><span>${labels.sitemapSources || "Sitemap files fetched"}</span><strong>${(view.sitemap_sources || []).length}</strong></div>
+    ${view.root_url ? `<div class="result-row"><span>${labels.sitemapRoot || "Root URL"}</span><strong class="wrap-url">${view.root_url}</strong></div>` : ""}
+    ${view.fetched_at ? `<div class="result-row"><span>${labels.indexLastFetch || "Last fetch"}</span><strong>${view.fetched_at.slice(0, 16).replace("T", " ")}</strong></div>` : ""}
+    ${sources ? `<details open class="sitemap-sources-block"><summary>${labels.sitemapSourcesList || "Fetched sitemap XML files"}</summary><ol class="sitemap-sources-list">${sources}</ol></details>` : ""}
+    ${preview ? `<details class="sitemap-preview-block"><summary>${labels.sitemapUrlPreview || "Page URLs preview"}</summary><ol class="sitemap-url-preview">${preview}</ol>${more}</details>` : ""}
+    ${downloads}`;
+}
+
 async function refreshIndexDiffStatus(domain, projectSlug, labels, lg) {
   const statusEl = document.getElementById("index-status");
+  const sitemapEl = document.getElementById("sitemap-view-panel");
   const pendingBtn = document.getElementById("mark-pending-btn");
-  if (!statusEl || !domain) return;
+  if (!domain) return;
 
   const qs = projectSlug ? `?project_slug=${encodeURIComponent(projectSlug)}` : "";
   try {
-    const res = await fetch(`/api/v1/index-diff/status/${encodeURIComponent(domain)}${qs}`);
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) return;
+    const [statusRes, viewRes] = await Promise.all([
+      fetch(`/api/v1/index-diff/status/${encodeURIComponent(domain)}${qs}`),
+      fetch(`/api/v1/index-diff/sitemap-view/${encodeURIComponent(domain)}${qs}`),
+    ]);
+    const status = await statusRes.json().catch(() => ({}));
+    const view = await viewRes.json().catch(() => ({}));
 
-    const pendingText = data.has_pending_batch
-      ? `${data.pending_batch_count} (${data.pending_batch_file || "new_urls"})`
-      : labels.indexNoPending || "—";
+    if (statusEl && statusRes.ok) {
+      const pendingText = status.has_pending_batch
+        ? `${status.pending_batch_count} (${status.pending_batch_file || "new_urls"})`
+        : labels.indexNoPending || "—";
 
-    statusEl.innerHTML = `
-      <div class="result-row"><span>${labels.indexSitemap || "Sitemap"}</span><strong>${data.sitemap_url_count || 0}</strong></div>
-      <div class="result-row"><span>${labels.indexSubmitted || "Submitted"}</span><strong>${data.total_submitted || 0}</strong></div>
-      <div class="result-row"><span>${labels.indexPending || "Pending"}</span><strong>${pendingText}</strong></div>
-      <div class="result-row"><span>${labels.indexLastFetch || "Last fetch"}</span><strong>${data.last_sitemap_fetch ? data.last_sitemap_fetch.slice(0, 16).replace("T", " ") : "—"}</strong></div>`;
-    statusEl.classList.remove("muted");
+      statusEl.innerHTML = `
+        <div class="result-row"><span>${labels.indexSubmitted || "Submitted"}</span><strong>${status.total_submitted || 0}</strong></div>
+        <div class="result-row"><span>${labels.indexPending || "Pending"}</span><strong>${pendingText}</strong></div>`;
+      statusEl.classList.remove("muted");
+    }
+
+    if (sitemapEl && viewRes.ok) {
+      sitemapEl.innerHTML = renderSitemapViewPanel(view, labels, lg);
+    }
 
     if (pendingBtn) {
-      pendingBtn.disabled = !data.has_pending_batch;
-      pendingBtn.title = data.has_pending_batch ? "" : labels.indexNoPending || "";
+      pendingBtn.disabled = !status.has_pending_batch;
     }
   } catch (_) {}
 }
@@ -435,14 +486,14 @@ async function runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, s
       true
     );
     try {
-      const urls = await expandSitemapInBrowser(sitemapUrl, (kind, idx, total, subUrl, depth) => {
+      const expanded = await expandSitemapInBrowser(sitemapUrl, (kind, idx, total, subUrl, depth) => {
         if (kind === "main") return;
         const base = importLabels.statusSub || (lg === "fa" ? "sub-sitemap" : "Sub-sitemap");
         const depthLabel = depth > 1 ? ` L${depth}` : "";
         const shortName = subUrl ? subUrl.split("/").pop() : "";
         setIndexDiffProgress(lg, importLabels, `${base} ${idx}/${total}${depthLabel}: ${shortName}…`, true);
       });
-      fd.append("urls_file", urlsToTxtBlob(urls), "sitemap_urls.txt");
+      fd.append("urls_file", urlsToTxtBlob(expanded.urls), "sitemap_urls.txt");
       fd.append("sitemap_url", "");
     } catch (browserErr) {
       console.warn("Browser sitemap fetch failed, trying server:", browserErr);
@@ -494,6 +545,7 @@ async function runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, s
 
 function initIndexDiffForm(lang, importLabels = {}) {
   initProjectSelect();
+  setIndexDiffProgress(lang, importLabels, "", false);
 
   const mainForm = document.getElementById("form-index-diff");
   const refreshStatus = () => {
@@ -538,51 +590,57 @@ function initIndexDiffForm(lang, importLabels = {}) {
     const sitemapUrl = form.sitemap_url?.value?.trim() || "";
     const sitemapFile = document.getElementById("sitemap-file-field");
     const hasFile = sitemapFile?.files?.length > 0;
-    if (!sitemapUrl && !hasFile) {
-      throw new Error(
-        importLabels.sitemapRequired ||
-          (lg === "fa" ? "آدرس sitemap یا فایل sitemap.xml را وارد کنید" : "Enter sitemap URL or upload sitemap.xml")
+    try {
+      if (!sitemapUrl && !hasFile) {
+        throw new Error(
+          importLabels.sitemapRequired ||
+            (lg === "fa" ? "آدرس sitemap یا فایل sitemap.xml را وارد کنید" : "Enter sitemap URL or upload sitemap.xml")
+        );
+      }
+
+      const fd = new FormData();
+      fd.append("domain", form.domain.value);
+      fd.append("mark_submitted", form.mark_submitted.checked ? "true" : "false");
+      if (form.project_slug?.value) {
+        fd.append("project_slug", form.project_slug.value);
+      }
+      if (hasFile) {
+        fd.append("sitemap_file", sitemapFile.files[0]);
+        fd.append("sitemap_url", sitemapUrl);
+      } else {
+        fd.append("sitemap_url", sitemapUrl);
+      }
+
+      setIndexDiffProgress(
+        lg,
+        importLabels,
+        importLabels.statusStarting || (lg === "fa" ? "شروع پردازش…" : "Starting…"),
+        true
       );
+
+      const res = await fetch("/api/v1/jobs/index-diff/start", { method: "POST", body: fd });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 404) {
+        const restartHint =
+          lg === "fa"
+            ? "سرور قدیمی است — برای صفحه پیشرفت: ./scripts/run_web.sh"
+            : "Stale server — run ./scripts/run_web.sh for the progress page";
+        toast(restartHint, "info", true);
+        await runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, sitemapFile);
+        return;
+      }
+
+      if (!res.ok) throw new Error(formatApiError(data, res.statusText));
+
+      setIndexDiffProgress(lg, importLabels, "", false);
+      const qs = new URLSearchParams({ lang: lg });
+      if (form.project_slug?.value) qs.set("project", form.project_slug.value);
+      window.location.href = `/tasks/${data.job_id}?${qs}`;
+    } catch (err) {
+      setIndexDiffProgress(lg, importLabels, "", false);
+      throw err;
     }
-
-    const fd = new FormData();
-    fd.append("domain", form.domain.value);
-    fd.append("mark_submitted", form.mark_submitted.checked ? "true" : "false");
-    if (form.project_slug?.value) {
-      fd.append("project_slug", form.project_slug.value);
-    }
-    if (hasFile) {
-      fd.append("sitemap_file", sitemapFile.files[0]);
-      fd.append("sitemap_url", sitemapUrl);
-    } else {
-      fd.append("sitemap_url", sitemapUrl);
-    }
-
-    setIndexDiffProgress(
-      lg,
-      importLabels,
-      importLabels.statusStarting || (lg === "fa" ? "شروع پردازش…" : "Starting…"),
-      true
-    );
-
-    const res = await fetch("/api/v1/jobs/index-diff/start", { method: "POST", body: fd });
-    const data = await res.json().catch(() => ({}));
-
-    if (res.status === 404) {
-      const restartHint =
-        lg === "fa"
-          ? "سرور قدیمی است — برای صفحه پیشرفت: ./scripts/run_web.sh"
-          : "Stale server — run ./scripts/run_web.sh for the progress page";
-      toast(restartHint, "info", true);
-      await runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, sitemapFile);
-      return;
-    }
-
-    if (!res.ok) throw new Error(formatApiError(data, res.statusText));
-
-    const qs = new URLSearchParams({ lang: lg });
-    if (form.project_slug?.value) qs.set("project", form.project_slug.value);
-    window.location.href = `/tasks/${data.job_id}?${qs}`;
   });
 
   bindForm("form-index-import", async (form, lg) => {

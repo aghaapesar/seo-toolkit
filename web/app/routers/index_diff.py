@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from src.services.url_index_tracker import UrlIndexTracker
 from web.app.form_utils import parse_form_bool
 from web.app.routers.projects import resolve_project_paths
-from web.app.services.file_download import flatten_run_files, resolve_download_path
+from web.app.services.file_download import flatten_run_files, resolve_download_path, file_entry
 from web.app.services.sitemap_fetch import (
     fetch_all_sitemap_urls,
     normalize_sitemap_url,
@@ -100,6 +100,9 @@ def _execute_diff(
     urls: List[str],
     mark_submitted: bool,
     project_slug: Optional[str] = None,
+    *,
+    root_url: str = "",
+    sitemap_sources: Optional[List[str]] = None,
 ) -> DiffResponse:
     """
     Run index diff and export txt files.
@@ -116,6 +119,11 @@ def _execute_diff(
     tracker, domain, output_dir = _resolve_tracker(domain, project_slug)
 
     new_urls, already_urls = tracker.diff(urls)
+    if root_url or sitemap_sources:
+        tracker.update_sitemap_snapshot_meta(
+            root_url=root_url,
+            sitemap_sources=sitemap_sources,
+        )
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     new_file = tracker.export_txt(new_urls, output_dir / f"new_urls_{stamp}.txt")
@@ -185,6 +193,35 @@ def list_export_files(domain: str, project_slug: str = ""):
     return {
         "domain": domain,
         "runs": runs,
+    }
+
+
+@router.get("/sitemap-view/{domain}")
+def sitemap_view(domain: str, project_slug: str = "", preview_limit: int = 50):
+    """Return fetched sitemap sources, URL preview, and download path."""
+    tracker, domain, _ = _resolve_tracker(domain, project_slug or None)
+    view = tracker.get_sitemap_view(preview_limit=min(preview_limit, 200))
+    downloads = []
+    if view.get("sitemap_latest_file"):
+        try:
+            downloads.append(
+                file_entry("sitemap_latest", FILE_KIND_LABELS["sitemap_latest"], view["sitemap_latest_file"])
+            )
+        except ValueError:
+            pass
+    snapshot = tracker._data.get("sitemap_snapshot") or {}
+    if snapshot.get("archive_file"):
+        try:
+            downloads.append(
+                file_entry("sitemap_archive", FILE_KIND_LABELS["sitemap_archive"], snapshot["archive_file"])
+            )
+        except ValueError:
+            pass
+    return {
+        "domain": domain,
+        **view,
+        "downloads": downloads,
+        "status": tracker.get_status(),
     }
 
 

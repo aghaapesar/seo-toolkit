@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.9.3 (2025-07-01)
+
+### Index Diff — sitemap list in sidebar, fix stuck spinner
+- Sidebar shows fetched sitemap XML files (root + sub-sitemaps) and URL preview
+- Download link for full sitemap URL list
+- Progress spinner no longer stuck after redirect/error
+- Sub-sitemap sources saved during browser fetch
+
 ## v2.9.2 (2025-07-01)
 
 ### Fix — import shows `undefined` and ignores checkbox

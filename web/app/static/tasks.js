@@ -85,7 +85,7 @@ function showTaskError(labels, message) {
 }
 
 async function runClientSitemapPhase(jobId, sitemapUrl, labels) {
-  const urls = await expandSitemapInBrowser(sitemapUrl, (kind, a, b, subUrl, depth) => {
+  const expanded = await expandSitemapInBrowser(sitemapUrl, (kind, a, b, subUrl, depth) => {
     if (kind === "main") {
       reportJobProgress(jobId, 10, labels.fetchingMain, "fetch_root");
       return;
@@ -99,19 +99,20 @@ async function runClientSitemapPhase(jobId, sitemapUrl, labels) {
     reportJobProgress(jobId, pct, msg, `fetch_sub_${subIndex}`);
   });
 
-  if (!urls.length) {
+  if (!expanded.urls.length) {
     throw new Error(labels.noUrls);
   }
 
   await reportJobProgress(
     jobId,
     48,
-    `${labels.fetchingSub} — ${urls.length} URLs`,
+    `${labels.fetchingSub} — ${expanded.urls.length} URLs`,
     "urls_collected"
   );
 
   const fd = new FormData();
-  fd.append("urls_file", urlsToTxtBlob(urls), "sitemap_urls.txt");
+  fd.append("urls_file", urlsToTxtBlob(expanded.urls), "sitemap_urls.txt");
+  fd.append("sitemap_sources", JSON.stringify(expanded.sources || []));
   const res = await fetch(`/api/v1/jobs/${jobId}/supply-urls`, { method: "POST", body: fd });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(formatApiError(data, res.statusText));

@@ -76,6 +76,8 @@ def _run_index_diff_job(job: JobRecord) -> None:
         urls=urls,
         mark_submitted=bool(job.params.get("mark_submitted")),
         project_slug=job.params.get("project_slug") or None,
+        root_url=(job.params.get("sitemap_url") or "").strip(),
+        sitemap_sources=job.params.get("sitemap_sources"),
     )
     job.result = result.model_dump()
     job.set_progress(100, "Done", step="completed")
@@ -108,7 +110,11 @@ def update_job_progress(job_id: str, payload: ProgressUpdate):
 
 
 @router.post("/{job_id}/supply-urls")
-async def supply_urls(job_id: str, urls_file: UploadFile = File(...)):
+async def supply_urls(
+    job_id: str,
+    urls_file: UploadFile = File(...),
+    sitemap_sources: str = Form(""),
+):
     """
     Receive expanded URL list from browser after recursive sitemap fetch.
 
@@ -132,6 +138,13 @@ async def supply_urls(job_id: str, urls_file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="No URLs found in uploaded list")
 
     job.params["urls"] = urls
+    if sitemap_sources.strip():
+        import json
+
+        try:
+            job.params["sitemap_sources"] = json.loads(sitemap_sources)
+        except json.JSONDecodeError:
+            job.params["sitemap_sources"] = [s.strip() for s in sitemap_sources.splitlines() if s.strip()]
     job.status = "queued"
     job.set_progress(50, f"Loaded {len(urls)} URLs from sitemap", step="urls_ready")
     job_manager.enqueue(job_id, _run_index_diff_job)

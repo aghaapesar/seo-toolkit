@@ -178,12 +178,20 @@ class UrlIndexTracker:
             self._save_history()
         return added
 
-    def save_sitemap_snapshot(self, urls: List[str]) -> Dict:
+    def save_sitemap_snapshot(
+        self,
+        urls: List[str],
+        *,
+        root_url: str = "",
+        sitemap_sources: Optional[List[str]] = None,
+    ) -> Dict:
         """
         Persist latest sitemap URL list and archive a timestamped copy.
 
         Input:
             urls: Full sitemap URL list from the latest fetch.
+            root_url: Entry sitemap URL entered by user.
+            sitemap_sources: Sitemap XML files fetched (index + sub-sitemaps).
 
         Output:
             Snapshot metadata dict stored in history.
@@ -199,11 +207,75 @@ class UrlIndexTracker:
             "url_count": len(unique_urls),
             "latest_file": str(self.sitemap_latest_file),
             "archive_file": str(archive_path),
+            "root_url": root_url or (self._data.get("sitemap_snapshot") or {}).get("root_url", ""),
+            "sitemap_sources": list(sitemap_sources or []),
         }
         self._data["sitemap_snapshot"] = meta
         self._data["last_sitemap_fetch"] = meta["fetched_at"]
         self._save_history()
         return meta
+
+    def update_sitemap_snapshot_meta(
+        self,
+        *,
+        root_url: str = "",
+        sitemap_sources: Optional[List[str]] = None,
+    ) -> None:
+        """Attach root URL and fetched sitemap XML sources to latest snapshot."""
+        snapshot = self._data.setdefault("sitemap_snapshot", {})
+        if root_url:
+            snapshot["root_url"] = root_url
+        if sitemap_sources:
+            snapshot["sitemap_sources"] = list(sitemap_sources)
+        self._save_history()
+
+    def read_sitemap_preview(self, limit: int = 50) -> List[str]:
+        """
+        Read first N page URLs from latest sitemap snapshot file.
+
+        Input:
+            limit: Maximum lines to return.
+
+        Output:
+            List of URL strings.
+        """
+        if not self.sitemap_latest_file.is_file():
+            return []
+        urls: List[str] = []
+        with open(self.sitemap_latest_file, "r", encoding="utf-8") as handle:
+            for line in handle:
+                url = line.strip()
+                if url and not url.startswith("#"):
+                    urls.append(url)
+                if len(urls) >= limit:
+                    break
+        return urls
+
+    def get_sitemap_view(self, preview_limit: int = 50) -> Dict:
+        """
+        Build sitemap fetch summary for UI (sources, counts, preview).
+
+        Output:
+            Dict with root, sources, url_count, preview, download path.
+        """
+        snapshot = self._data.get("sitemap_snapshot") or {}
+        latest = snapshot.get("latest_file") or str(self.sitemap_latest_file)
+        rel_latest = latest
+        try:
+            rel_latest = str(Path(latest).resolve().relative_to(Path.cwd().resolve()))
+        except ValueError:
+            pass
+
+        return {
+            "root_url": snapshot.get("root_url", ""),
+            "sitemap_sources": snapshot.get("sitemap_sources") or [],
+            "url_count": snapshot.get("url_count", 0),
+            "fetched_at": snapshot.get("fetched_at"),
+            "urls_preview": self.read_sitemap_preview(preview_limit),
+            "preview_limit": preview_limit,
+            "sitemap_latest_file": rel_latest,
+            "has_snapshot": bool(snapshot.get("url_count")),
+        }
 
     @staticmethod
     def _dedupe_urls(urls: List[str]) -> List[str]:

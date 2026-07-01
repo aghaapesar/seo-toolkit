@@ -432,10 +432,55 @@ html, body {
   margin: 0.25rem 0 0.75rem;
 }
 
-.panel-info-title {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
+.panel-info-stack .panel-info-title:not(:first-child) {
+  margin-top: 1.25rem;
 }
+
+.sitemap-view-box {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.sitemap-sources-list,
+.sitemap-url-preview {
+  margin: 0.5rem 0 0;
+  padding-inline-start: 1.1rem;
+  font-size: 0.8rem;
+}
+
+.sitemap-sources-list li,
+.sitemap-url-preview li {
+  margin-bottom: 0.45rem;
+  word-break: break-all;
+}
+
+.sitemap-src {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.url-preview-item code {
+  font-size: 0.75rem;
+}
+
+.wrap-url {
+  word-break: break-all;
+  font-size: 0.8rem;
+}
+
+.sitemap-sources-block,
+.sitemap-preview-block {
+  margin-top: 0.75rem;
+}
+
+.sitemap-sources-block summary,
+.sitemap-preview-block summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
 
 .status-box .result-row {
   margin-bottom: 0.35rem;
