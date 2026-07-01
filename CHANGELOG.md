@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.8 (2025-07-01)
+
+### Fix — Index Diff 502 when browser can open sitemap
+- Web UI fetches sitemap URL **in the browser** (CORS) and uploads XML to the server
+- Avoids Python/server DNS issues when Terminal `curl` works but uvicorn cannot download
+
 ## v2.6.7 (2025-07-01)
 
 ### Fix — Index Diff `Not Found` (404)

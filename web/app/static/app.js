@@ -166,6 +166,18 @@ function initProjectsPage(lang) {
   });
 }
 
+async function tryFetchSitemapInBrowser(url) {
+  const res = await fetch(url, { credentials: "omit", cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status}`);
+  }
+  const text = await res.text();
+  if (!text.trim()) {
+    throw new Error("Empty sitemap");
+  }
+  return new Blob([text], { type: "application/xml" });
+}
+
 function initIndexDiffForm(lang, importLabels = {}) {
   initProjectSelect();
 
@@ -196,16 +208,38 @@ function initIndexDiffForm(lang, importLabels = {}) {
 
     const fd = new FormData();
     fd.append("domain", form.domain.value);
-    fd.append("sitemap_url", sitemapUrl);
     fd.append("mark_submitted", form.mark_submitted.checked ? "true" : "false");
     if (form.project_slug?.value) {
       fd.append("project_slug", form.project_slug.value);
     }
+
+    let usedBrowserFetch = false;
     if (hasFile) {
       fd.append("sitemap_file", sitemapFile.files[0]);
+      fd.append("sitemap_url", sitemapUrl);
+    } else if (sitemapUrl) {
+      // Browser can reach sites the Python server cannot (VPN/DNS/Cursor env).
+      try {
+        toast(t(lang, "processing"));
+        const blob = await tryFetchSitemapInBrowser(sitemapUrl);
+        fd.append("sitemap_file", blob, "sitemap.xml");
+        fd.append("sitemap_url", "");
+        usedBrowserFetch = true;
+      } catch (_) {
+        fd.append("sitemap_url", sitemapUrl);
+      }
     }
 
-    toast(t(lg, "processing"));
+    if (!hasFile && !sitemapUrl) {
+      throw new Error(
+        importLabels.sitemapRequired ||
+          (lg === "fa" ? "آدرس sitemap یا فایل sitemap.xml را وارد کنید" : "Enter sitemap URL or upload sitemap.xml")
+      );
+    }
+
+    if (!usedBrowserFetch) {
+      toast(t(lg, "processing"));
+    }
     let res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
     // Fallback for stale server without /diff-form (pre v2.6.5)
     if (res.status === 404 && sitemapUrl && !hasFile) {
