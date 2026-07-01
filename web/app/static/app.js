@@ -285,6 +285,82 @@ async function tryFetchSitemapInBrowser(url) {
   return urlsToTxtBlob(urls);
 }
 
+async function runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, sitemapFile) {
+  const fd = new FormData();
+  fd.append("domain", form.domain.value);
+  fd.append("mark_submitted", form.mark_submitted.checked ? "true" : "false");
+  if (form.project_slug?.value) {
+    fd.append("project_slug", form.project_slug.value);
+  }
+
+  if (hasFile) {
+    fd.append("sitemap_file", sitemapFile.files[0]);
+    fd.append("sitemap_url", sitemapUrl);
+  } else if (sitemapUrl) {
+    setIndexDiffProgress(
+      lg,
+      importLabels,
+      importLabels.statusFetching || (lg === "fa" ? "دریافت sitemap…" : "Fetching sitemap…"),
+      true
+    );
+    try {
+      const urls = await expandSitemapInBrowser(sitemapUrl, (kind, idx, total, subUrl, depth) => {
+        if (kind === "main") return;
+        const base = importLabels.statusSub || (lg === "fa" ? "sub-sitemap" : "Sub-sitemap");
+        const depthLabel = depth > 1 ? ` L${depth}` : "";
+        const shortName = subUrl ? subUrl.split("/").pop() : "";
+        setIndexDiffProgress(lg, importLabels, `${base} ${idx}/${total}${depthLabel}: ${shortName}…`, true);
+      });
+      fd.append("urls_file", urlsToTxtBlob(urls), "sitemap_urls.txt");
+      fd.append("sitemap_url", "");
+    } catch (browserErr) {
+      console.warn("Browser sitemap fetch failed, trying server:", browserErr);
+      fd.append("sitemap_url", sitemapUrl);
+    }
+  }
+
+  setIndexDiffProgress(
+    lg,
+    importLabels,
+    importLabels.statusServer || (lg === "fa" ? "مقایسه روی سرور…" : "Comparing on server…"),
+    true
+  );
+
+  let res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
+  if (res.status === 404 && sitemapUrl && !hasFile) {
+    res = await fetch("/api/v1/index-diff/diff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        domain: form.domain.value,
+        sitemap_url: sitemapUrl,
+        mark_submitted: form.mark_submitted.checked,
+        project_slug: form.project_slug?.value || null,
+      }),
+    });
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(formatApiError(data, res.statusText));
+
+  const doneMsg =
+    lg === "fa"
+      ? `انجام شد — ${data.total} URL، ${data.new_count} جدید، ${data.already_count} قبلی`
+      : `Done — ${data.total} URLs, ${data.new_count} new, ${data.already_count} submitted`;
+
+  setIndexDiffProgress(lg, importLabels, doneMsg, false);
+  showResult(
+    "result-index-diff",
+    resultCard(lg, {
+      [lg === "fa" ? "مجموع" : "Total"]: data.total,
+      [lg === "fa" ? "جدید" : "New"]: data.new_count,
+      [lg === "fa" ? "قبلی" : "Submitted"]: data.already_count,
+      "new.txt": data.new_file,
+      "done.txt": data.already_file,
+    })
+  );
+  toast(doneMsg, "success");
+}
+
 function initIndexDiffForm(lang, importLabels = {}) {
   initProjectSelect();
 
@@ -335,6 +411,17 @@ function initIndexDiffForm(lang, importLabels = {}) {
 
     const res = await fetch("/api/v1/jobs/index-diff/start", { method: "POST", body: fd });
     const data = await res.json().catch(() => ({}));
+
+    if (res.status === 404) {
+      const restartHint =
+        lg === "fa"
+          ? "سرور قدیمی است — برای صفحه پیشرفت: ./scripts/run_web.sh"
+          : "Stale server — run ./scripts/run_web.sh for the progress page";
+      toast(restartHint, "info", true);
+      await runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, sitemapFile);
+      return;
+    }
+
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
 
     const langParam = lg ? `?lang=${lg}` : "";

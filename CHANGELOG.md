@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.7.1 (2025-07-01)
+
+### Fix — Index Diff `Not Found` on stale server
+- Fallback to legacy diff flow when `/api/v1/jobs/index-diff/start` returns 404
+- Clear hint to restart `./scripts/run_web.sh` for the progress page
+
 ## v2.7.0 (2025-07-01)
 
 ### Index Diff — recursive sitemaps, task progress page, background jobs
