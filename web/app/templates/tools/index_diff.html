@@ -55,7 +55,8 @@
         data-status-fetching="{{ strings.status_fetching_sitemap | default('', true) }}"
         data-status-sub="{{ strings.status_fetching_sub | default('', true) }}"
         data-status-server="{{ strings.status_server_diff | default('', true) }}"
-        data-status-done="{{ strings.status_done | default('', true) }}">
+        data-status-done="{{ strings.status_done | default('', true) }}"
+        data-status-starting="{{ strings.status_starting | default('', true) }}">
       </div>
     </details>
 
@@ -82,6 +83,7 @@
       statusSub: ds.statusSub || "",
       statusServer: ds.statusServer || "",
       statusDone: ds.statusDone || "",
+      statusStarting: ds.statusStarting || "",
     });
   })();
 </script>

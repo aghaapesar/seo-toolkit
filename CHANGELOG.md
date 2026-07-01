@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.7.0 (2025-07-01)
+
+### Index Diff — recursive sitemaps, task progress page, background jobs
+- **Recursive sub-sitemap expansion** in browser (nested sitemap indexes, relative `<loc>` URLs)
+- **Server proxy** `/api/v1/sitemap/proxy` when CORS blocks sub-sitemap downloads
+- **Background jobs** API (`POST /api/v1/jobs/index-diff/start`) with polling
+- **Progress page** `/tasks/{job_id}` — progress bar, step list, done message
+
 ## v2.6.9 (2025-07-01)
 
 ### Index Diff — visible progress and browser sitemap index expansion

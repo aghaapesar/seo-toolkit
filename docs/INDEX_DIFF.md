@@ -61,6 +61,19 @@ index_history/
 
 Open `/tools/index-diff` in the FastAPI dashboard for the same workflow in the browser.
 
+### Background task + progress page (v2.7+)
+
+1. Submit the form — a background job is created
+2. You are redirected to `/tasks/{job_id}` with a **progress bar** and step list
+3. The browser **recursively** downloads sitemap indexes and all nested sub-sitemaps
+4. If CORS blocks a sub-sitemap, the server proxy (`/api/v1/sitemap/proxy`) is used automatically
+5. When finished, a **done** message and output file paths are shown
+
+API:
+- `POST /api/v1/jobs/index-diff/start` — create job (multipart, same fields as the form)
+- `GET /api/v1/jobs/{job_id}` — poll status and result
+- `POST /api/v1/jobs/{job_id}/supply-urls` — browser sends expanded URL list
+
 ### Import multiple txt files
 
 In the **Import previous URLs** section you can select **several `.txt` files at once** (Ctrl/Cmd+click or Shift+click). Each file should contain one URL per line. Duplicates across files are merged automatically.
@@ -97,6 +110,12 @@ python main.py --mode index-diff --domain example.com
 
 - `new_urls_*.txt` → بدهید به ابزار ایندکس
 - `already_submitted_*.txt` → قبلاً ارسال شده
+
+### صفحه پیشرفت (نسخه ۲.۷+)
+
+بعد از زدن دکمه اجرا به `/tasks/{job_id}` می‌روید — نوار پیشرفت، لیست مراحل، و پیام «تمام شد» با مسیر فایل‌های خروجی.
+
+Sitemapهای تو در تو (index داخل index) در مرورگر باز می‌شوند. اگر CORS اجازه ندهد، سرور از proxy کمک می‌گیرد.
 
 ## import داده قبلی
 

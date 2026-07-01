@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block heading %}{{ strings.task_progress_title }}{% endblock %}
+{% block subheading %}{{ strings.task_progress_sub }}{% endblock %}
+{% block content %}
+<div class="task-page" id="task-page" data-job-id="{{ job_id }}">
+  <section class="panel task-panel">
+    <div class="task-header">
+      <div class="task-status-badge" id="task-status-badge" data-status="pending">{{ strings.task_status_pending }}</div>
+      <h2 id="task-title">{{ strings.task_progress_title }}</h2>
+    </div>
+
+    <div class="task-progress-block">
+      <div class="task-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="task-progress-track">
+        <div class="task-progress-fill" id="task-progress-fill" style="width: 0%"></div>
+      </div>
+      <div class="task-progress-meta">
+        <span id="task-progress-percent">0%</span>
+        <span id="task-progress-message" class="muted">{{ strings.processing }}</span>
+      </div>
+    </div>
+
+    <ol class="task-steps" id="task-steps" aria-live="polite"></ol>
+
+    <div id="task-result" class="result-panel hidden"></div>
+    <div id="task-error" class="result-panel result-error hidden"></div>
+
+    <div class="task-actions">
+      <a href="/tools/index-diff?lang={{ lang }}" class="btn btn-ghost" id="task-back-link">{{ strings.back_to_tool }}</a>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.TASK_LABELS = {
+    pending: {{ strings.task_status_pending | tojson }},
+    running: {{ strings.task_status_running | tojson }},
+    waiting: {{ strings.task_status_waiting | tojson }},
+    completed: {{ strings.task_status_completed | tojson }},
+    failed: {{ strings.task_status_failed | tojson }},
+    doneTitle: {{ strings.task_done_title | tojson }},
+    doneMessage: {{ strings.task_done_message | tojson }},
+    fetchingMain: {{ strings.status_fetching_sitemap | tojson }},
+    fetchingSub: {{ strings.status_fetching_sub | tojson }},
+    serverDiff: {{ strings.status_server_diff | tojson }},
+    noUrls: {{ strings.task_no_urls | tojson }},
+    total: {{ strings.total | tojson }},
+    newUrls: {{ strings.new_urls | tojson }},
+    already: {{ strings.already | tojson }},
+    error: {{ strings.error | tojson }},
+  };
+</script>
+<script src="/static/tasks.js"></script>
+{% endblock %}

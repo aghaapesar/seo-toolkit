@@ -477,6 +477,102 @@ html, body {
 
 .toast-info { border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc; }
 
+.task-page {
+  max-width: 720px;
+}
+
+.task-panel {
+  padding: 1.5rem;
+}
+
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.task-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.task-status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  white-space: nowrap;
+}
+
+.task-status-badge[data-status="completed"] {
+  background: rgba(52, 211, 153, 0.15);
+  color: #6ee7b7;
+}
+
+.task-status-badge[data-status="failed"] {
+  background: rgba(251, 113, 133, 0.15);
+  color: #fda4af;
+}
+
+.task-progress-block {
+  margin-bottom: 1.25rem;
+}
+
+.task-progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.task-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #34d399, #38bdf8);
+  transition: width 0.35s ease;
+}
+
+.task-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.task-steps {
+  list-style: decimal;
+  padding-inline-start: 1.25rem;
+  margin: 0 0 1rem;
+  max-height: 200px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.task-steps li {
+  margin-bottom: 0.35rem;
+}
+
+.task-done-card .task-done-msg {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+}
+
+.task-actions {
+  margin-top: 1.25rem;
+}
+
+.result-error {
+  border-color: rgba(251, 113, 133, 0.35);
+  background: rgba(251, 113, 133, 0.08);
+}
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

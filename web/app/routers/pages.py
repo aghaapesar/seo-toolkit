@@ -68,3 +68,15 @@ def projects_page(request: Request):
     return TEMPLATES.TemplateResponse(
         request, "projects.html", page_context(request, title, tool_id=None)
     )
+
+
+@router.get("/tasks/{job_id}", response_class=HTMLResponse)
+def task_progress_page(request: Request, job_id: str):
+    """Background task progress page with live status."""
+    lang = get_lang(request)
+    title = t(lang, "task_progress_title")
+    return TEMPLATES.TemplateResponse(
+        request,
+        "tasks/progress.html",
+        page_context(request, title, tool_id="index-diff", job_id=job_id),
+    )
