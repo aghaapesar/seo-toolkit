@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.8.0 (2025-07-01)
+
+### Index Diff — sitemap snapshots, batch marking, sticky project
+- Save full sitemap URL list (`sitemap_latest.txt` + dated archives)
+- Optional import checkbox: register as indexed or diff-only exclusion
+- Mark last diff batch or upload txt after indexing tool submission
+- Sticky project via cookie + `?project=` on all nav links
+- Sidebar status: sitemap count, submitted, pending batch
+
 ## v2.7.1 (2025-07-01)
 
 ### Fix — Index Diff `Not Found` on stale server

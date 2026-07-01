@@ -432,7 +432,15 @@ html, body {
   margin: 0.25rem 0 0.75rem;
 }
 
-.progress-panel {
+.panel-info-title {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.status-box .result-row {
+  margin-bottom: 0.35rem;
+}
+
   display: flex;
   align-items: center;
   gap: 0.75rem;

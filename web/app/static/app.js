@@ -190,6 +190,23 @@ function bindForm(formId, handler) {
   });
 }
 
+function getActiveProjectSlug() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("project")) return params.get("project");
+  const bodySlug = document.body.dataset.activeProject;
+  if (bodySlug) return bodySlug;
+  const match = document.cookie.match(/(?:^|;\s*)active_project=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function syncProjectSelects() {
+  const slug = getActiveProjectSlug();
+  if (!slug) return;
+  document.querySelectorAll(".project-select, #global-project-select").forEach((sel) => {
+    if (sel && sel.value !== slug) sel.value = slug;
+  });
+}
+
 function setActiveProject(slug) {
   if (slug) {
     document.cookie = `active_project=${encodeURIComponent(slug)};path=/;max-age=31536000`;
@@ -221,10 +238,49 @@ async function fillProjectFields(slug) {
 }
 
 function initProjectSelect() {
+  syncProjectSelects();
   document.querySelectorAll(".project-select").forEach((sel) => {
-    sel.addEventListener("change", () => fillProjectFields(sel.value));
+    sel.addEventListener("change", () => {
+      if (sel.value) setActiveProject(sel.value);
+      else fillProjectFields("");
+    });
     if (sel.value) fillProjectFields(sel.value);
   });
+}
+
+async function refreshIndexDiffStatus(domain, projectSlug, labels, lg) {
+  const statusEl = document.getElementById("index-status");
+  const pendingBtn = document.getElementById("mark-pending-btn");
+  if (!statusEl || !domain) return;
+
+  const qs = projectSlug ? `?project_slug=${encodeURIComponent(projectSlug)}` : "";
+  try {
+    const res = await fetch(`/api/v1/index-diff/status/${encodeURIComponent(domain)}${qs}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return;
+
+    const pendingText = data.has_pending_batch
+      ? `${data.pending_batch_count} (${data.pending_batch_file || "new_urls"})`
+      : labels.indexNoPending || "—";
+
+    statusEl.innerHTML = `
+      <div class="result-row"><span>${labels.indexSitemap || "Sitemap"}</span><strong>${data.sitemap_url_count || 0}</strong></div>
+      <div class="result-row"><span>${labels.indexSubmitted || "Submitted"}</span><strong>${data.total_submitted || 0}</strong></div>
+      <div class="result-row"><span>${labels.indexPending || "Pending"}</span><strong>${pendingText}</strong></div>
+      <div class="result-row"><span>${labels.indexLastFetch || "Last fetch"}</span><strong>${data.last_sitemap_fetch ? data.last_sitemap_fetch.slice(0, 16).replace("T", " ") : "—"}</strong></div>`;
+    statusEl.classList.remove("muted");
+
+    if (pendingBtn) {
+      pendingBtn.disabled = !data.has_pending_batch;
+      pendingBtn.title = data.has_pending_batch ? "" : labels.indexNoPending || "";
+    }
+  } catch (_) {}
+}
+
+function indexDiffContext(form) {
+  const domain = form?.domain?.value?.trim() || document.getElementById("domain-field")?.value?.trim() || "";
+  const projectSlug = form?.project_slug?.value || getActiveProjectSlug() || "";
+  return { domain, projectSlug };
 }
 
 function initScrapingForm(lang) {
@@ -359,10 +415,25 @@ async function runIndexDiffLegacy(form, lg, importLabels, sitemapUrl, hasFile, s
     })
   );
   toast(doneMsg, "success");
+  const { domain, projectSlug } = indexDiffContext(form);
+  await refreshIndexDiffStatus(domain, projectSlug, importLabels, lg);
 }
 
 function initIndexDiffForm(lang, importLabels = {}) {
   initProjectSelect();
+
+  const mainForm = document.getElementById("form-index-diff");
+  const refreshStatus = () => {
+    const lg = document.body.dataset.lang || lang || "fa";
+    const { domain, projectSlug } = indexDiffContext(mainForm);
+    if (domain) refreshIndexDiffStatus(domain, projectSlug, importLabels, lg);
+  };
+  mainForm?.domain?.addEventListener("change", refreshStatus);
+  mainForm?.domain?.addEventListener("blur", refreshStatus);
+  document.querySelectorAll(".project-select").forEach((sel) => {
+    sel.addEventListener("change", () => setTimeout(refreshStatus, 300));
+  });
+  refreshStatus();
 
   const fileInput = document.getElementById("import-txt-files");
   const fileHint = document.getElementById("import-file-hint");
@@ -424,8 +495,9 @@ function initIndexDiffForm(lang, importLabels = {}) {
 
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
 
-    const langParam = lg ? `?lang=${lg}` : "";
-    window.location.href = `/tasks/${data.job_id}${langParam}`;
+    const qs = new URLSearchParams({ lang: lg });
+    if (form.project_slug?.value) qs.set("project", form.project_slug.value);
+    window.location.href = `/tasks/${data.job_id}?${qs}`;
   });
 
   bindForm("form-index-import", async (form, lg) => {
@@ -441,8 +513,10 @@ function initIndexDiffForm(lang, importLabels = {}) {
     if (!fileInputEl?.files?.length) {
       throw new Error(importLabels.noFiles || (lg === "fa" ? "حداقل یک فایل txt انتخاب کنید" : "Select at least one .txt file"));
     }
+    const markSubmitted = document.getElementById("import-mark-submitted")?.checked ?? true;
     const fd = new FormData();
     fd.append("domain", domainInput.value);
+    fd.append("mark_submitted", markSubmitted ? "true" : "false");
     for (const file of fileInputEl.files) {
       fd.append("urls_files", file);
     }
@@ -454,10 +528,16 @@ function initIndexDiffForm(lang, importLabels = {}) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
 
+    const countLabel = data.mark_submitted
+      ? importLabels.totalAdded || "Total new URLs"
+      : importLabels.importParsed || "URLs parsed";
+    const countValue = data.mark_submitted ? data.added : data.parsed;
+
     const fileRows = (data.files || [])
       .map((f) => {
         const err = f.error ? ` — ${f.error}` : "";
-        return `<div class="result-row"><span>${f.name}</span><strong>+${f.added}${err}</strong></div>`;
+        const n = data.mark_submitted ? f.added : f.parsed;
+        return `<div class="result-row"><span>${f.name}</span><strong>${n}${err}</strong></div>`;
       })
       .join("");
 
@@ -465,13 +545,73 @@ function initIndexDiffForm(lang, importLabels = {}) {
       "result-index-import",
       `<div class="result-success">
         <h4>${t(lg, "success")}</h4>
-        <div class="result-row"><span>${importLabels.totalAdded || "Total new URLs"}</span><strong>${data.added}</strong></div>
+        <div class="result-row"><span>${countLabel}</span><strong>${countValue}</strong></div>
         <div class="result-row"><span>${importLabels.filesProcessed || "Files processed"}</span><strong>${data.files_processed}</strong></div>
         ${fileRows}
       </div>`
     );
-    toast(`${t(lg, "success")}: +${data.added}`, "success");
+    toast(`${t(lg, "success")}: ${countValue}`, "success");
+    await refreshIndexDiffStatus(domainInput.value, main?.project_slug?.value || getActiveProjectSlug(), importLabels, lg);
   });
+
+  const markForm = document.getElementById("form-mark-batch");
+  if (markForm) {
+    markForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const lg = document.body.dataset.lang || lang || "fa";
+      try {
+        const main = document.getElementById("form-index-diff");
+        const domainInput = document.getElementById("mark_batch_domain");
+        if (main?.domain?.value && domainInput) {
+          domainInput.value = main.domain.value;
+        }
+        if (!domainInput?.value) {
+          throw new Error(lg === "fa" ? "ابتدا دامنه را وارد کنید" : "Enter domain first");
+        }
+
+        const action = e.submitter?.value || "pending";
+        const batchFile = document.getElementById("mark-batch-file");
+        const fd = new FormData();
+        fd.append("domain", domainInput.value);
+        if (main?.project_slug?.value) {
+          fd.append("project_slug", main.project_slug.value);
+        }
+
+        if (action === "upload") {
+          if (!batchFile?.files?.length) {
+            throw new Error(lg === "fa" ? "فایل txt را انتخاب کنید" : "Select a txt file");
+          }
+          fd.append("use_pending", "false");
+          fd.append("batch_file", batchFile.files[0]);
+        } else {
+          fd.append("use_pending", "true");
+        }
+
+        toast(t(lg, "processing"));
+        const res = await fetch("/api/v1/index-diff/mark-batch", { method: "POST", body: fd });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(formatApiError(data, res.statusText));
+
+        showResult(
+          "result-mark-batch",
+          resultCard(lg, {
+            batch_id: data.batch_id,
+            submitted: data.status?.total_submitted,
+          })
+        );
+        toast(t(lg, "success"), "success");
+        if (batchFile) batchFile.value = "";
+        await refreshIndexDiffStatus(
+          domainInput.value,
+          main?.project_slug?.value || getActiveProjectSlug(),
+          importLabels,
+          lg
+        );
+      } catch (err) {
+        toast(`${t(lg, "error")}: ${err.message}`, "error");
+      }
+    });
+  }
 }
 
 function initContentForm(lang) {
@@ -509,6 +649,11 @@ function initGenerationForm(lang) {
     );
   });
 }
+
+// Sticky project + language links on load
+document.addEventListener("DOMContentLoaded", () => {
+  syncProjectSelects();
+});
 
 // Persist language preference
 document.querySelectorAll(".lang-switch a").forEach((a) => {

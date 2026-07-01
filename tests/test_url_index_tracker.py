@@ -64,7 +64,39 @@ def test_import_from_txt_files_merges_multiple(tmp_path):
     assert tracker.get_status()["total_submitted"] == 3
 
 
-def test_export_txt_writes_one_url_per_line(tmp_path):
+def test_save_sitemap_snapshot_and_pending_batch(tmp_path):
+    """Snapshot should persist latest list; pending batch awaits mark."""
+    tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path))
+    new_urls, _ = tracker.diff(["https://example.com/a", "https://example.com/b"])
+    assert len(new_urls) == 2
+    assert tracker.sitemap_latest_file.exists()
+    assert tracker.get_status()["sitemap_url_count"] == 2
+
+    tracker.set_last_pending_batch(new_urls, "new_urls_test.txt")
+    assert tracker.get_status()["has_pending_batch"] is True
+    batch_id = tracker.mark_last_pending_batch()
+    assert batch_id
+    assert tracker.get_status()["has_pending_batch"] is False
+    assert tracker.get_status()["total_submitted"] == 2
+
+
+def test_import_without_mark_adds_diff_exclusions(tmp_path):
+    """Import without mark should exclude URLs from diff only."""
+    import_file = tmp_path / "old.txt"
+    import_file.write_text("https://example.com/old\n", encoding="utf-8")
+
+    tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path / "history"))
+    added = tracker.import_from_txt(str(import_file), mark_submitted=False)
+    assert added == 1
+    assert tracker.get_status()["total_submitted"] == 0
+    assert tracker.get_status()["diff_exclusions_count"] == 1
+
+    new_urls, already = tracker.diff(
+        ["https://example.com/old", "https://example.com/new"]
+    )
+    assert new_urls == ["https://example.com/new"]
+    assert already == ["https://example.com/old"]
+
     """Export should create newline-delimited URL file."""
     tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path))
     out = tracker.export_txt(

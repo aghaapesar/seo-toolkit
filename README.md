@@ -1,4 +1,4 @@
-# Seo Toolkit v2.7.0
+# Seo Toolkit v2.8.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -19,6 +19,14 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
+
+## What's New in v2.8.0
+
+### Index Diff workflow
+- Full sitemap snapshots (latest + archive)
+- Import old txt batches with optional permanent registration
+- Mark indexed batch after submitting to your indexing tool
+- Sticky project across all menu pages
 
 ## What's New in v2.7.0
 

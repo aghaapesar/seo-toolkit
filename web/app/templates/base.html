@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body class="app-body" data-lang="{{ lang }}">
+<body class="app-body" data-lang="{{ lang }}" data-active-project="{{ active_project_slug }}">
   <div class="app-shell">
     <aside class="sidebar">
       <div class="brand">
@@ -20,21 +20,22 @@
         </div>
       </div>
       <nav class="nav">
-        <a href="/?lang={{ lang }}" class="nav-link {% if tool_id is none %}active{% endif %}">
+        {% set project_qs = '&project=' ~ active_project_slug if active_project_slug else '' %}
+        <a href="/?lang={{ lang }}{{ project_qs }}" class="nav-link {% if tool_id is none and page_title != strings.nav_projects and page_title != 'Projects' and page_title != 'پروژه‌ها' %}active{% endif %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
           {{ strings.nav_dashboard }}
         </a>
         {% for tool in tools %}
-        <a href="{{ tool.route }}?lang={{ lang }}" class="nav-link {% if tool_id is not none and tool_id == tool.id %}active{% endif %}">
+        <a href="{{ tool.route }}?lang={{ lang }}{{ project_qs }}" class="nav-link {% if tool_id is not none and tool_id == tool.id %}active{% endif %}">
           <span class="nav-dot {{ tool.gradient }}"></span>
           {% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}
         </a>
         {% endfor %}
-        <a href="/settings?lang={{ lang }}" class="nav-link">
+        <a href="/settings?lang={{ lang }}{{ project_qs }}" class="nav-link">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
           {{ strings.nav_settings }}
         </a>
-        <a href="/projects?lang={{ lang }}" class="nav-link {% if page_title == strings.nav_projects or page_title == 'Projects' or page_title == 'پروژه‌ها' %}active{% endif %}">
+        <a href="/projects?lang={{ lang }}{{ project_qs }}" class="nav-link {% if page_title == strings.nav_projects or page_title == 'Projects' or page_title == 'پروژه‌ها' %}active{% endif %}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
           {{ strings.nav_projects }}
         </a>
@@ -45,8 +46,8 @@
       </nav>
       <div class="sidebar-foot">
         <div class="lang-switch">
-          <a href="?lang=en" class="{% if lang == 'en' %}active{% endif %}">EN</a>
-          <a href="?lang=fa" class="{% if lang == 'fa' %}active{% endif %}">FA</a>
+          <a href="?lang=en{{ project_qs }}" class="{% if lang == 'en' %}active{% endif %}">EN</a>
+          <a href="?lang=fa{{ project_qs }}" class="{% if lang == 'fa' %}active{% endif %}">FA</a>
         </div>
         <small>v{{ version }}</small>
       </div>

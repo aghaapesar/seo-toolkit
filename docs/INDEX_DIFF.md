@@ -66,13 +66,24 @@ Open `/tools/index-diff` in the FastAPI dashboard for the same workflow in the b
 1. Submit the form — a background job is created
 2. You are redirected to `/tasks/{job_id}` with a **progress bar** and step list
 3. The browser **recursively** downloads sitemap indexes and all nested sub-sitemaps
-4. If CORS blocks a sub-sitemap, the server proxy (`/api/v1/sitemap/proxy`) is used automatically
-5. When finished, a **done** message and output file paths are shown
+4. When finished, download `new_urls_*.txt` and submit to your indexing tool
+5. Use **Mark last diff batch** (or upload the same txt) to register URLs as indexed
+6. Next run: only new sitemap URLs appear in the diff
+
+### Sitemap snapshots (v2.8+)
+
+Every successful fetch stores:
+- `index_history/{project}/sitemap_latest.txt`
+- `index_history/{project}/snapshots/sitemap_YYYYMMDD_HHMMSS.txt`
+
+### Import with optional registration
+
+- Checkbox **on**: URLs saved as already indexed
+- Checkbox **off**: URLs excluded from diff only (until you mark a batch)
 
 API:
-- `POST /api/v1/jobs/index-diff/start` — create job (multipart, same fields as the form)
-- `GET /api/v1/jobs/{job_id}` — poll status and result
-- `POST /api/v1/jobs/{job_id}/supply-urls` — browser sends expanded URL list
+- `POST /api/v1/index-diff/mark-batch` — `use_pending=true` or upload `batch_file`
+- `GET /api/v1/index-diff/status/{domain}?project_slug=`
 
 ### Import multiple txt files
 
@@ -113,9 +124,14 @@ python main.py --mode index-diff --domain example.com
 
 ### صفحه پیشرفت (نسخه ۲.۷+)
 
-بعد از زدن دکمه اجرا به `/tasks/{job_id}` می‌روید — نوار پیشرفت، لیست مراحل، و پیام «تمام شد» با مسیر فایل‌های خروجی.
+بعد از اجرا به `/tasks/{job_id}` می‌روید — نوار پیشرفت و خروجی `new_urls.txt`.
 
-Sitemapهای تو در تو (index داخل index) در مرورگر باز می‌شوند. اگر CORS اجازه ندهد، سرور از proxy کمک می‌گیرد.
+### snapshot و ثبت batch (نسخه ۲.۸+)
+
+- لیست کامل sitemap در `sitemap_latest.txt` + آرشیو dated
+- import با چک‌باکس: ثبت دائمی یا فقط حذف از diff
+- بعد از ایندکس: **ثبت آخرین batch** یا آپلود همان txt
+- پروژه در منوها sticky است (`?project=` + cookie)
 
 ## import داده قبلی
 

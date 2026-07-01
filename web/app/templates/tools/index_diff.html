@@ -33,10 +33,14 @@
       <p id="index-diff-progress-text" class="progress-text"></p>
     </div>
 
-    <details class="import-block">
+    <details class="import-block" open>
       <summary>{{ strings.import_urls }}</summary>
       <form id="form-index-import" class="stack-form" enctype="multipart/form-data">
         <input type="hidden" name="domain" id="import_domain" />
+        <label class="checkbox-row">
+          <input type="checkbox" name="mark_submitted" id="import-mark-submitted" checked />
+          <span>{{ strings.import_mark_submitted }}</span>
+        </label>
         <label>
           <span>{{ strings.import_txt_label }}</span>
           <input type="file" name="urls_files" accept=".txt" class="file-input" multiple id="import-txt-files" />
@@ -45,24 +49,48 @@
         <button type="submit" class="btn btn-ghost">{{ strings.import_submit }}</button>
       </form>
       <div id="result-index-import" class="result-panel hidden"></div>
-      <div id="index-diff-import-labels" class="sr-only"
-        data-import-hint="{{ strings.import_txt_hint | default('', true) }}"
-        data-files-selected="{{ strings.import_files_selected | default('', true) }}"
-        data-no-files="{{ strings.import_no_files | default('', true) }}"
-        data-total-added="{{ strings.import_total_added | default('', true) }}"
-        data-files-processed="{{ strings.import_files_processed | default('', true) }}"
-        data-sitemap-required="{{ strings.sitemap_required | default('', true) }}"
-        data-status-fetching="{{ strings.status_fetching_sitemap | default('', true) }}"
-        data-status-sub="{{ strings.status_fetching_sub | default('', true) }}"
-        data-status-server="{{ strings.status_server_diff | default('', true) }}"
-        data-status-done="{{ strings.status_done | default('', true) }}"
-        data-status-starting="{{ strings.status_starting | default('', true) }}">
-      </div>
+    </details>
+
+    <details class="import-block">
+      <summary>{{ strings.mark_batch_title }}</summary>
+      <p class="muted file-hint">{{ strings.mark_batch_hint }}</p>
+      <form id="form-mark-batch" class="stack-form" enctype="multipart/form-data">
+        <input type="hidden" name="domain" id="mark_batch_domain" />
+        <button type="submit" class="btn btn-primary" id="mark-pending-btn" name="action" value="pending">{{ strings.mark_pending_batch }}</button>
+        <label>
+          <span>{{ strings.mark_batch_upload_label }}</span>
+          <input type="file" name="batch_file" accept=".txt" class="file-input" id="mark-batch-file" />
+        </label>
+        <button type="submit" class="btn btn-ghost" name="action" value="upload">{{ strings.mark_batch_submit }}</button>
+      </form>
+      <div id="result-mark-batch" class="result-panel hidden"></div>
     </details>
 
     <div id="result-index-diff" class="result-panel hidden"></div>
+
+    <div id="index-diff-import-labels" class="sr-only"
+      data-import-hint="{{ strings.import_txt_hint | default('', true) }}"
+      data-files-selected="{{ strings.import_files_selected | default('', true) }}"
+      data-no-files="{{ strings.import_no_files | default('', true) }}"
+      data-total-added="{{ strings.import_total_added | default('', true) }}"
+      data-files-processed="{{ strings.import_files_processed | default('', true) }}"
+      data-sitemap-required="{{ strings.sitemap_required | default('', true) }}"
+      data-status-fetching="{{ strings.status_fetching_sitemap | default('', true) }}"
+      data-status-sub="{{ strings.status_fetching_sub | default('', true) }}"
+      data-status-server="{{ strings.status_server_diff | default('', true) }}"
+      data-status-done="{{ strings.status_done | default('', true) }}"
+      data-status-starting="{{ strings.status_starting | default('', true) }}"
+      data-import-parsed="{{ strings.import_parsed_only | default('', true) }}"
+      data-index-sitemap="{{ strings.index_sitemap_count | default('', true) }}"
+      data-index-submitted="{{ strings.index_submitted_count | default('', true) }}"
+      data-index-pending="{{ strings.index_pending_count | default('', true) }}"
+      data-index-last-fetch="{{ strings.index_last_fetch | default('', true) }}"
+      data-index-no-pending="{{ strings.index_no_pending | default('', true) }}"
+      data-index-status-title="{{ strings.index_status_title | default('', true) }}">
+    </div>
   </section>
   <aside class="panel panel-info">
+    <h3 class="panel-info-title">{{ strings.index_status_title }}</h3>
     <div id="index-status" class="status-box muted">{{ strings.status_idle }}</div>
   </aside>
 </div>
@@ -84,6 +112,13 @@
       statusServer: ds.statusServer || "",
       statusDone: ds.statusDone || "",
       statusStarting: ds.statusStarting || "",
+      importParsed: ds.importParsed || "",
+      indexSitemap: ds.indexSitemap || "",
+      indexSubmitted: ds.indexSubmitted || "",
+      indexPending: ds.indexPending || "",
+      indexLastFetch: ds.indexLastFetch || "",
+      indexNoPending: ds.indexNoPending || "",
+      indexStatusTitle: ds.indexStatusTitle || "",
     });
   })();
 </script>
