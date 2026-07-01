@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.6 (2025-07-01)
+
+### Fix — sitemap download when curl works but Python fails
+- `run_web.sh` unsets IDE-injected HTTP_PROXY before starting uvicorn
+- HTTP client forces direct connection (no accidental Cursor proxy)
+- macOS curl fallback when `requests` cannot resolve/connect (matches Terminal `curl` behavior)
+
 ## v2.6.5 (2025-06-30)
 
 ### Fix — blocked sitemap hosts (e.g. sargarmia.com)

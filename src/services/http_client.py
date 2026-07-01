@@ -11,6 +11,10 @@ Output:
 from __future__ import annotations
 
 import logging
+import os
+import platform
+import shutil
+import subprocess
 import time
 from pathlib import Path
 from typing import Dict, Optional, Tuple
@@ -85,8 +89,63 @@ def build_http_session() -> requests.Session:
         proxies["https"] = settings["https_proxy"]
     if proxies:
         session.proxies.update(proxies)
+    else:
+        # Force direct connection — ignore IDE-injected HTTP_PROXY (e.g. Cursor sandbox).
+        session.proxies.update({"http": None, "https": None})
 
     return session
+
+
+def _clean_proxy_env() -> Dict[str, str]:
+    """Return a copy of os.environ without proxy variables."""
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if "proxy" not in key.lower()
+    }
+
+
+def _fetch_via_curl(url: str, timeout: int) -> Tuple[Optional[bytes], Optional[str]]:
+    """
+    macOS fallback: use system curl when requests cannot resolve/connect.
+
+    Input:
+        url: Target URL.
+        timeout: Max seconds for curl --max-time.
+
+    Output:
+        Tuple of (body bytes, error message).
+    """
+    if platform.system() != "Darwin" or not shutil.which("curl"):
+        return None, None
+
+    try:
+        proc = subprocess.run(
+            [
+                "curl",
+                "-fsSL",
+                "--max-time",
+                str(timeout),
+                "-A",
+                DEFAULT_REQUEST_HEADERS["User-Agent"],
+                "-H",
+                f"Accept: {DEFAULT_REQUEST_HEADERS['Accept']}",
+                url,
+            ],
+            capture_output=True,
+            env=_clean_proxy_env(),
+            timeout=timeout + 5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return None, f"curl fallback failed: {exc}"
+
+    if proc.returncode == 0 and proc.stdout:
+        logger.info("Fetched via curl fallback: %s (%s bytes)", url, len(proc.stdout))
+        return proc.stdout, None
+
+    stderr = (proc.stderr or b"").decode("utf-8", errors="replace").strip()
+    return None, stderr or f"curl exit code {proc.returncode}"
 
 
 def fetch_url(
@@ -143,6 +202,13 @@ def fetch_url(
                 )
                 if attempt < max_retries:
                     time.sleep(min(2 ** attempt, 10))
+
+    # macOS: curl often works when Python requests fails (IDE proxy/DNS env).
+    curl_content, curl_error = _fetch_via_curl(url, timeout=timeout)
+    if curl_content:
+        return curl_content, None
+    if curl_error:
+        last_error = curl_error
 
     hint = (
         " If the site opens in your browser but not here, upload sitemap.xml manually "

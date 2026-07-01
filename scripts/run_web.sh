@@ -17,5 +17,10 @@ fi
 lsof -ti :8000 | xargs kill -9 2>/dev/null || true
 sleep 1
 
+# Cursor/IDE shells inject local HTTP_PROXY that breaks outbound sitemap downloads.
+# config.yaml app.http_proxy is the supported way to set a real VPN proxy.
+unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
+unset SOCKS_PROXY SOCKS5_PROXY socks_proxy socks5_proxy
+
 echo "Seo Toolkit → http://127.0.0.1:8000"
 exec ./venv/bin/uvicorn web.app.main:app --host 127.0.0.1 --port 8000 --reload
