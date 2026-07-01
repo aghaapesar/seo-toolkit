@@ -1027,7 +1027,7 @@ class SeoToolkit:
                 tracker = UrlIndexTracker(domain)
 
             if import_file:
-                added = tracker.import_from_txt(import_file)
+                added = tracker.import_from_txt(import_file)["added"]
                 print(f"Imported {added} URL(s) from {import_file}")
 
             status = tracker.get_status()

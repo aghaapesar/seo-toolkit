@@ -286,7 +286,7 @@ class UrlIndexTracker:
         self._save_history()
         return batch_id
 
-    def import_from_txt(self, file_path: str, *, mark_submitted: bool = True) -> int:
+    def import_from_txt(self, file_path: str, *, mark_submitted: bool = True) -> Dict:
         """
         Import URLs from a text file.
 
@@ -295,11 +295,18 @@ class UrlIndexTracker:
             mark_submitted: When True, persist URLs as submitted.
 
         Output:
-            Count of newly added URLs (or parsed count when not marking).
+            Dict with urls_in_file, added, parsed, skipped counts.
         """
         urls = self._read_urls_from_file(file_path)
+        urls_in_file = len(urls)
         if not mark_submitted:
-            return self.add_diff_exclusions(urls)
+            parsed = self.add_diff_exclusions(urls)
+            return {
+                "urls_in_file": urls_in_file,
+                "added": 0,
+                "parsed": parsed,
+                "skipped": max(0, urls_in_file - parsed),
+            }
 
         existing = self.load_submitted_urls()
         added = 0
@@ -312,7 +319,12 @@ class UrlIndexTracker:
 
         if added:
             self._save_history()
-        return added
+        return {
+            "urls_in_file": urls_in_file,
+            "added": added,
+            "parsed": urls_in_file,
+            "skipped": max(0, urls_in_file - added),
+        }
 
     def import_from_txt_files(
         self,
@@ -332,31 +344,45 @@ class UrlIndexTracker:
         """
         total_added = 0
         total_parsed = 0
+        total_in_file = 0
         file_results: List[Dict] = []
 
         for file_path in file_paths:
             path = Path(file_path)
             try:
-                if mark_submitted:
-                    added = self.import_from_txt(file_path, mark_submitted=True)
-                    total_added += added
-                    file_results.append(
-                        {"name": path.name, "added": added, "parsed": added, "error": None}
-                    )
-                else:
-                    added = self.import_from_txt(file_path, mark_submitted=False)
-                    total_parsed += added
-                    file_results.append(
-                        {"name": path.name, "added": 0, "parsed": added, "error": None}
-                    )
+                result = self.import_from_txt(
+                    file_path,
+                    mark_submitted=mark_submitted,
+                )
+                total_added += result["added"]
+                total_parsed += result["parsed"] if not mark_submitted else result["added"]
+                total_in_file += result["urls_in_file"]
+                file_results.append(
+                    {
+                        "name": path.name,
+                        "urls_in_file": result["urls_in_file"],
+                        "added": result["added"],
+                        "parsed": result["parsed"],
+                        "skipped": result["skipped"],
+                        "error": None,
+                    }
+                )
             except FileNotFoundError as exc:
                 file_results.append(
-                    {"name": path.name, "added": 0, "parsed": 0, "error": str(exc)}
+                    {
+                        "name": path.name,
+                        "urls_in_file": 0,
+                        "added": 0,
+                        "parsed": 0,
+                        "skipped": 0,
+                        "error": str(exc),
+                    }
                 )
 
         return {
             "total_added": total_added,
-            "total_parsed": total_parsed if not mark_submitted else total_added,
+            "total_parsed": total_parsed if not mark_submitted else total_in_file,
+            "total_in_file": total_in_file,
             "files_processed": len(file_results),
             "files": file_results,
             "mark_submitted": mark_submitted,

@@ -87,6 +87,8 @@
       data-status-done="{{ strings.status_done | default('', true) }}"
       data-status-starting="{{ strings.status_starting | default('', true) }}"
       data-import-parsed="{{ strings.import_parsed_only | default('', true) }}"
+      data-urls-in-file="{{ strings.import_urls_in_file | default('', true) }}"
+      data-import-skipped="{{ strings.import_skipped | default('', true) }}"
       data-index-sitemap="{{ strings.index_sitemap_count | default('', true) }}"
       data-index-submitted="{{ strings.index_submitted_count | default('', true) }}"
       data-index-pending="{{ strings.index_pending_count | default('', true) }}"
@@ -121,6 +123,8 @@
       statusDone: ds.statusDone || "",
       statusStarting: ds.statusStarting || "",
       importParsed: ds.importParsed || "",
+      urlsInFile: ds.urlsInFile || "",
+      importSkipped: ds.importSkipped || "",
       indexSitemap: ds.indexSitemap || "",
       indexSubmitted: ds.indexSubmitted || "",
       indexPending: ds.indexPending || "",

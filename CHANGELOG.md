@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.9.2 (2025-07-01)
+
+### Fix — import shows `undefined` and ignores checkbox
+- Parse `mark_submitted=false` correctly from multipart forms (was always true)
+- Import result shows URLs in file, added/excluded, skipped per file
+- Supports drip-feed txt exports (one URL per line)
+
 ## v2.9.1 (2025-07-01)
 
 ### Fix — task page 500 (Undefined is not JSON serializable)

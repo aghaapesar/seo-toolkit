@@ -38,9 +38,9 @@ def test_import_from_txt_adds_urls(tmp_path):
     )
 
     tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path / "history"))
-    added = tracker.import_from_txt(str(import_file))
+    result = tracker.import_from_txt(str(import_file))
 
-    assert added == 2
+    assert result["added"] == 2
     assert tracker.get_status()["total_submitted"] == 2
 
 
@@ -86,8 +86,8 @@ def test_import_without_mark_adds_diff_exclusions(tmp_path):
     import_file.write_text("https://example.com/old\n", encoding="utf-8")
 
     tracker = UrlIndexTracker("example.com", base_dir=str(tmp_path / "history"))
-    added = tracker.import_from_txt(str(import_file), mark_submitted=False)
-    assert added == 1
+    result = tracker.import_from_txt(str(import_file), mark_submitted=False)
+    assert result["parsed"] == 1
     assert tracker.get_status()["total_submitted"] == 0
     assert tracker.get_status()["diff_exclusions_count"] == 1
 

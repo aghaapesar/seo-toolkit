@@ -249,6 +249,39 @@ async function loadIndexDiffExports(domain, projectSlug, containerId, labels, lg
   }
 }
 
+function asFormBool(value) {
+  if (value === true || value === false) return value;
+  return String(value || "").trim().toLowerCase() === "true" || value === 1 || value === "1";
+}
+
+function renderImportResult(data, lg, importLabels) {
+  const markSubmitted = asFormBool(data.mark_submitted);
+  const urlsInFile = Number(data.urls_in_file ?? 0);
+  const added = Number(data.added ?? 0);
+  const parsed = Number(data.parsed ?? 0);
+  const skipped = Math.max(0, urlsInFile - (markSubmitted ? added : parsed));
+
+  const fileRows = (data.files || [])
+    .map((f) => {
+      const err = f.error ? ` — ${f.error}` : "";
+      const inFile = Number(f.urls_in_file ?? f.parsed ?? f.added ?? 0);
+      const detail = markSubmitted
+        ? `+${Number(f.added ?? 0)} / ${inFile}`
+        : `${Number(f.parsed ?? 0)} / ${inFile}`;
+      return `<div class="result-row"><span>${f.name}</span><strong>${detail}${err}</strong></div>`;
+    })
+    .join("");
+
+  return `<div class="result-success">
+    <h4>${t(lg, "success")}</h4>
+    <div class="result-row"><span>${importLabels.urlsInFile || "URLs in files"}</span><strong>${urlsInFile}</strong></div>
+    <div class="result-row"><span>${markSubmitted ? importLabels.totalAdded || "New registered" : importLabels.importParsed || "Excluded for diff"}</span><strong>${markSubmitted ? added : parsed}</strong></div>
+    <div class="result-row"><span>${importLabels.importSkipped || "Skipped (duplicate)"}</span><strong>${skipped}</strong></div>
+    <div class="result-row"><span>${importLabels.filesProcessed || "Files processed"}</span><strong>${data.files_processed ?? 0}</strong></div>
+    ${fileRows}
+  </div>`;
+}
+
 function setActiveProject(slug) {
   if (slug) {
     document.cookie = `active_project=${encodeURIComponent(slug)};path=/;max-age=31536000`;
@@ -580,29 +613,12 @@ function initIndexDiffForm(lang, importLabels = {}) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
 
-    const countLabel = data.mark_submitted
-      ? importLabels.totalAdded || "Total new URLs"
-      : importLabels.importParsed || "URLs parsed";
-    const countValue = data.mark_submitted ? data.added : data.parsed;
-
-    const fileRows = (data.files || [])
-      .map((f) => {
-        const err = f.error ? ` — ${f.error}` : "";
-        const n = data.mark_submitted ? f.added : f.parsed;
-        return `<div class="result-row"><span>${f.name}</span><strong>${n}${err}</strong></div>`;
-      })
-      .join("");
-
-    showResult(
-      "result-index-import",
-      `<div class="result-success">
-        <h4>${t(lg, "success")}</h4>
-        <div class="result-row"><span>${countLabel}</span><strong>${countValue}</strong></div>
-        <div class="result-row"><span>${importLabels.filesProcessed || "Files processed"}</span><strong>${data.files_processed}</strong></div>
-        ${fileRows}
-      </div>`
+    showResult("result-index-import", renderImportResult(data, lg, importLabels));
+    const markSubmitted = asFormBool(data.mark_submitted);
+    toast(
+      `${t(lg, "success")}: ${markSubmitted ? Number(data.added ?? 0) : Number(data.parsed ?? 0)}`,
+      "success"
     );
-    toast(`${t(lg, "success")}: ${countValue}`, "success");
     await refreshIndexDiffStatus(domainInput.value, main?.project_slug?.value || getActiveProjectSlug(), importLabels, lg);
   });
 

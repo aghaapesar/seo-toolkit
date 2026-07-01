@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from src.services.url_index_tracker import UrlIndexTracker
+from web.app.form_utils import parse_form_bool
 from web.app.routers.projects import resolve_project_paths
 from web.app.services.file_download import flatten_run_files, resolve_download_path
 from web.app.services.sitemap_fetch import (
@@ -199,14 +200,15 @@ async def import_urls(
     domain: str = Form(...),
     urls_files: List[UploadFile] = File(...),
     project_slug: str = Form(""),
-    mark_submitted: bool = Form(True),
+    mark_submitted: str = Form("true"),
 ):
     """
     Import URLs from one or more txt files.
 
     Input:
-        mark_submitted: When True, persist as indexed; when False, parse-only preview.
+        mark_submitted: When true, persist as indexed; when false, diff-only exclusion.
     """
+    mark = parse_form_bool(mark_submitted)
     if not urls_files:
         raise HTTPException(status_code=400, detail="At least one .txt file is required")
 
@@ -220,12 +222,13 @@ async def import_urls(
         raise HTTPException(status_code=400, detail="No valid files received")
 
     tracker, domain, _ = _resolve_tracker(domain, project_slug or None)
-    result = tracker.import_from_txt_files(saved_paths, mark_submitted=mark_submitted)
+    result = tracker.import_from_txt_files(saved_paths, mark_submitted=mark)
     return {
         "domain": domain,
         "added": result["total_added"],
         "parsed": result["total_parsed"],
-        "mark_submitted": mark_submitted,
+        "urls_in_file": result["total_in_file"],
+        "mark_submitted": mark,
         "files_processed": result["files_processed"],
         "files": result["files"],
         "status": tracker.get_status(),
