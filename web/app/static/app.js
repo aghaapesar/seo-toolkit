@@ -220,7 +220,7 @@ function initIndexDiffForm(lang, importLabels = {}) {
     } else if (sitemapUrl) {
       // Browser can reach sites the Python server cannot (VPN/DNS/Cursor env).
       try {
-        toast(t(lang, "processing"));
+        toast(t(lg, "processing"));
         const blob = await tryFetchSitemapInBrowser(sitemapUrl);
         fd.append("sitemap_file", blob, "sitemap.xml");
         fd.append("sitemap_url", "");
@@ -228,13 +228,6 @@ function initIndexDiffForm(lang, importLabels = {}) {
       } catch (_) {
         fd.append("sitemap_url", sitemapUrl);
       }
-    }
-
-    if (!hasFile && !sitemapUrl) {
-      throw new Error(
-        importLabels.sitemapRequired ||
-          (lg === "fa" ? "آدرس sitemap یا فایل sitemap.xml را وارد کنید" : "Enter sitemap URL or upload sitemap.xml")
-      );
     }
 
     if (!usedBrowserFetch) {
