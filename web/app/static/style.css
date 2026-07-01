@@ -432,6 +432,51 @@ html, body {
   margin: 0.25rem 0 0.75rem;
 }
 
+.progress-panel {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.progress-panel.hidden { display: none; }
+
+.progress-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.progress-spinner {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-2);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.status-box.status-active {
+  color: #7dd3fc;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.btn.is-loading {
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.toast-info { border-color: rgba(56, 189, 248, 0.4); color: #7dd3fc; }
+
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

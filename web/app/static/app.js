@@ -11,13 +11,91 @@ function t(lang, key) {
   return (I18N[lang] || I18N.en)[key] || key;
 }
 
-function toast(msg, type = "info") {
+let toastHideTimer = null;
+
+function toast(msg, type = "info", persist = false) {
   const el = document.getElementById("toast");
   if (!el) return;
   el.textContent = msg;
   el.className = `toast toast-${type}`;
   el.classList.remove("hidden");
-  setTimeout(() => el.classList.add("hidden"), 4000);
+  if (toastHideTimer) clearTimeout(toastHideTimer);
+  if (!persist) {
+    toastHideTimer = setTimeout(() => el.classList.add("hidden"), type === "error" ? 8000 : 5000);
+  }
+}
+
+function setIndexDiffProgress(lg, labels, message, active) {
+  const panel = document.getElementById("index-diff-progress");
+  const text = document.getElementById("index-diff-progress-text");
+  const status = document.getElementById("index-status");
+  const btn = document.getElementById("index-diff-submit");
+  if (panel) panel.classList.toggle("hidden", !active);
+  if (text && message) text.textContent = message;
+  if (status && message) {
+    status.textContent = message;
+    status.classList.toggle("muted", !active);
+    status.classList.toggle("status-active", active);
+  }
+  if (btn) {
+    btn.disabled = active;
+    btn.classList.toggle("is-loading", active);
+  }
+  if (active && message) {
+    toast(message, "info", true);
+  }
+}
+
+function parseSitemapXmlText(text) {
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror")) {
+    throw new Error("Invalid sitemap XML");
+  }
+  const locsIn = (parentLocal) =>
+    [...doc.getElementsByTagName("*")]
+      .filter((el) => el.localName === parentLocal)
+      .map((el) => [...el.children].find((c) => c.localName === "loc")?.textContent?.trim())
+      .filter(Boolean);
+  return { subSitemaps: locsIn("sitemap"), urls: locsIn("url") };
+}
+
+async function fetchTextWithTimeout(url, timeoutMs = 60000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      credentials: "omit",
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function expandSitemapInBrowser(entryUrl, onProgress) {
+  onProgress?.("main");
+  const rootText = await fetchTextWithTimeout(entryUrl);
+  const root = parseSitemapXmlText(rootText);
+
+  if (!root.subSitemaps.length) {
+    return [...new Set(root.urls)];
+  }
+
+  const allUrls = [];
+  for (let i = 0; i < root.subSitemaps.length; i++) {
+    onProgress?.("sub", i + 1, root.subSitemaps.length);
+    const subText = await fetchTextWithTimeout(root.subSitemaps[i]);
+    const sub = parseSitemapXmlText(subText);
+    allUrls.push(...sub.urls);
+  }
+  return [...new Set(allUrls)];
+}
+
+function urlsToTxtBlob(urls) {
+  return new Blob([urls.join("\n") + "\n"], { type: "text/plain" });
 }
 
 /** Turn FastAPI / fetch error payloads into a readable string. */
@@ -167,15 +245,9 @@ function initProjectsPage(lang) {
 }
 
 async function tryFetchSitemapInBrowser(url) {
-  const res = await fetch(url, { credentials: "omit", cache: "no-store" });
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
-  const text = await res.text();
-  if (!text.trim()) {
-    throw new Error("Empty sitemap");
-  }
-  return new Blob([text], { type: "application/xml" });
+  const urls = await expandSitemapInBrowser(url);
+  if (!urls.length) throw new Error("No URLs in sitemap");
+  return urlsToTxtBlob(urls);
 }
 
 function initIndexDiffForm(lang, importLabels = {}) {
@@ -213,53 +285,79 @@ function initIndexDiffForm(lang, importLabels = {}) {
       fd.append("project_slug", form.project_slug.value);
     }
 
-    let usedBrowserFetch = false;
-    if (hasFile) {
-      fd.append("sitemap_file", sitemapFile.files[0]);
-      fd.append("sitemap_url", sitemapUrl);
-    } else if (sitemapUrl) {
-      // Browser can reach sites the Python server cannot (VPN/DNS/Cursor env).
-      try {
-        toast(t(lg, "processing"));
-        const blob = await tryFetchSitemapInBrowser(sitemapUrl);
-        fd.append("sitemap_file", blob, "sitemap.xml");
-        fd.append("sitemap_url", "");
-        usedBrowserFetch = true;
-      } catch (_) {
-        fd.append("sitemap_url", sitemapUrl);
-      }
-    }
+    setIndexDiffProgress(lg, importLabels, importLabels.statusFetching || t(lg, "processing"), true);
 
-    if (!usedBrowserFetch) {
-      toast(t(lg, "processing"));
+    try {
+      if (hasFile) {
+        fd.append("sitemap_file", sitemapFile.files[0]);
+        fd.append("sitemap_url", sitemapUrl);
+      } else if (sitemapUrl) {
+        try {
+          const urls = await expandSitemapInBrowser(sitemapUrl, (kind, idx, total) => {
+            if (kind === "main") {
+              setIndexDiffProgress(
+                lg,
+                importLabels,
+                importLabels.statusFetching || (lg === "fa" ? "دریافت sitemap…" : "Fetching sitemap…"),
+                true
+              );
+            } else {
+              const base = importLabels.statusSub || (lg === "fa" ? "sub-sitemap" : "Sub-sitemap");
+              setIndexDiffProgress(lg, importLabels, `${base} ${idx}/${total}…`, true);
+            }
+          });
+          fd.append("urls_file", urlsToTxtBlob(urls), "sitemap_urls.txt");
+          fd.append("sitemap_url", "");
+        } catch (browserErr) {
+          console.warn("Browser sitemap fetch failed, trying server:", browserErr);
+          fd.append("sitemap_url", sitemapUrl);
+        }
+      }
+
+      setIndexDiffProgress(
+        lg,
+        importLabels,
+        importLabels.statusServer || (lg === "fa" ? "مقایسه روی سرور…" : "Comparing on server…"),
+        true
+      );
+
+      let res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
+      if (res.status === 404 && sitemapUrl && !hasFile) {
+        res = await fetch("/api/v1/index-diff/diff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            domain: form.domain.value,
+            sitemap_url: sitemapUrl,
+            mark_submitted: form.mark_submitted.checked,
+            project_slug: form.project_slug?.value || null,
+          }),
+        });
+      }
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(formatApiError(data, res.statusText));
+
+      const doneMsg =
+        (lg === "fa"
+          ? `انجام شد — ${data.total} URL، ${data.new_count} جدید، ${data.already_count} قبلی`
+          : `Done — ${data.total} URLs, ${data.new_count} new, ${data.already_count} submitted`);
+
+      setIndexDiffProgress(lg, importLabels, doneMsg, false);
+      showResult(
+        "result-index-diff",
+        resultCard(lg, {
+          [lg === "fa" ? "مجموع" : "Total"]: data.total,
+          [lg === "fa" ? "جدید" : "New"]: data.new_count,
+          [lg === "fa" ? "قبلی" : "Submitted"]: data.already_count,
+          "new.txt": data.new_file,
+          "done.txt": data.already_file,
+        })
+      );
+      toast(doneMsg, "success");
+    } catch (err) {
+      setIndexDiffProgress(lg, importLabels, `${t(lg, "error")}: ${err.message}`, false);
+      throw err;
     }
-    let res = await fetch("/api/v1/index-diff/diff-form", { method: "POST", body: fd });
-    // Fallback for stale server without /diff-form (pre v2.6.5)
-    if (res.status === 404 && sitemapUrl && !hasFile) {
-      res = await fetch("/api/v1/index-diff/diff", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          domain: form.domain.value,
-          sitemap_url: sitemapUrl,
-          mark_submitted: form.mark_submitted.checked,
-          project_slug: form.project_slug?.value || null,
-        }),
-      });
-    }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(formatApiError(data, res.statusText));
-    showResult(
-      "result-index-diff",
-      resultCard(lg, {
-        [lg === "fa" ? "مجموع" : "Total"]: data.total,
-        [lg === "fa" ? "جدید" : "New"]: data.new_count,
-        [lg === "fa" ? "قبلی" : "Submitted"]: data.already_count,
-        "new.txt": data.new_file,
-        "done.txt": data.already_file,
-      })
-    );
-    toast(t(lg, "success"), "success");
   });
 
   bindForm("form-index-import", async (form, lg) => {

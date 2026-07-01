@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## v2.6.9 (2025-07-01)
+
+### Index Diff — visible progress and browser sitemap index expansion
+- Persistent progress panel + sidebar status (no silent “processing” disappear)
+- Browser downloads full sitemap index + sub-sitemaps, sends URL list to server
+- API accepts `urls_file` txt to skip server-side download
+
 ## v2.6.8 (2025-07-01)
 
 ### Fix — Index Diff 502 when browser can open sitemap

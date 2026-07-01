@@ -184,12 +184,13 @@ async def run_diff_form(
     mark_submitted: bool = Form(False),
     project_slug: str = Form(""),
     sitemap_file: UploadFile = File(None),
+    urls_file: UploadFile = File(None),
 ):
     """
-    Web form diff — sitemap URL and/or uploaded sitemap.xml file.
+    Web form diff — sitemap URL, uploaded XML, or pre-expanded URLs txt.
 
     Input:
-        domain, optional sitemap_url, optional sitemap_file upload.
+        domain, optional sitemap_url, sitemap_file, or urls_file (one URL per line).
 
     Output:
         DiffResponse (same as JSON /diff).
@@ -197,7 +198,12 @@ async def run_diff_form(
     urls: List[str] = []
     fetch_error: Optional[str] = None
 
-    if sitemap_file and sitemap_file.filename:
+    if urls_file and urls_file.filename:
+        raw = await urls_file.read()
+        if not raw:
+            raise HTTPException(status_code=400, detail="URLs file is empty")
+        urls = _parse_urls_txt(raw)
+    elif sitemap_file and sitemap_file.filename:
         raw = await sitemap_file.read()
         if not raw:
             raise HTTPException(status_code=400, detail="Uploaded sitemap file is empty")
@@ -222,3 +228,18 @@ async def run_diff_form(
         mark_submitted=mark_submitted,
         project_slug=project_slug or None,
     )
+
+
+def _parse_urls_txt(raw: bytes) -> List[str]:
+    """Parse newline-delimited URL list from uploaded txt."""
+    text = raw.decode("utf-8", errors="replace")
+    urls: List[str] = []
+    seen = set()
+    for line in text.splitlines():
+        url = line.strip()
+        if not url or url.startswith("#"):
+            continue
+        if url not in seen:
+            seen.add(url)
+            urls.append(url)
+    return urls

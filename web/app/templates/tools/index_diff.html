@@ -25,8 +25,13 @@
         <input type="checkbox" name="mark_submitted" />
         <span>{{ strings.mark_submitted }}</span>
       </label>
-      <button type="submit" class="btn btn-primary btn-lg">{{ strings.submit }}</button>
+      <button type="submit" class="btn btn-primary btn-lg" id="index-diff-submit">{{ strings.submit }}</button>
     </form>
+
+    <div id="index-diff-progress" class="progress-panel hidden" role="status" aria-live="polite">
+      <div class="progress-spinner"></div>
+      <p id="index-diff-progress-text" class="progress-text"></p>
+    </div>
 
     <details class="import-block">
       <summary>{{ strings.import_urls }}</summary>
@@ -46,14 +51,18 @@
         data-no-files="{{ strings.import_no_files | default('', true) }}"
         data-total-added="{{ strings.import_total_added | default('', true) }}"
         data-files-processed="{{ strings.import_files_processed | default('', true) }}"
-        data-sitemap-required="{{ strings.sitemap_required | default('', true) }}">
+        data-sitemap-required="{{ strings.sitemap_required | default('', true) }}"
+        data-status-fetching="{{ strings.status_fetching_sitemap | default('', true) }}"
+        data-status-sub="{{ strings.status_fetching_sub | default('', true) }}"
+        data-status-server="{{ strings.status_server_diff | default('', true) }}"
+        data-status-done="{{ strings.status_done | default('', true) }}">
       </div>
     </details>
 
     <div id="result-index-diff" class="result-panel hidden"></div>
   </section>
   <aside class="panel panel-info">
-    <div id="index-status" class="status-box muted">{% if lang == 'fa' %}وضعیت دامنه پس از اجرا{% else %}Domain status after run{% endif %}</div>
+    <div id="index-status" class="status-box muted">{{ strings.status_idle }}</div>
   </aside>
 </div>
 {% endblock %}
@@ -69,6 +78,10 @@
       totalAdded: ds.totalAdded || "",
       filesProcessed: ds.filesProcessed || "",
       sitemapRequired: ds.sitemapRequired || "",
+      statusFetching: ds.statusFetching || "",
+      statusSub: ds.statusSub || "",
+      statusServer: ds.statusServer || "",
+      statusDone: ds.statusDone || "",
     });
   })();
 </script>
