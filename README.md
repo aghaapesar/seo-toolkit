@@ -1,4 +1,4 @@
-# Seo Toolkit v2.8.0
+# Seo Toolkit v4.4.1
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -7,18 +7,162 @@ A powerful, interactive Python application optimized for **Persian/Farsi content
 4. **Internal Linking**: Smart internal linking with semantic analysis
 5. **Knowledge Base**: Track content history and avoid duplicates
 6. **URL Index Diff**: Separate new sitemap URLs from already-submitted indexing URLs
-7. **Web Dashboard**: FastAPI UI for all modes (EN/FA)
-8. **Multi-Project**: Run 3+ sites with isolated `input/`, `output/`, and index history
+7. **Content Cluster & Calendar**: SEOSignal Excel → keyword clusters + publish calendar (hybrid AI)
+8. **Web Dashboard**: FastAPI UI for all modes (EN/FA)
+9. **Multi-Project**: Run 3+ sites with isolated `input/`, `output/`, and index history
 
 Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/seo-toolkit)
 
-**Documentation:** [docs/INSTALLATION.md](docs/INSTALLATION.md) | [docs/MULTI_PROJECT.md](docs/MULTI_PROJECT.md) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md)
+**Documentation:** [docs/INSTALLATION.md](docs/INSTALLATION.md) | [docs/MULTI_PROJECT.md](docs/MULTI_PROJECT.md) | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | [docs/INDEX_DIFF.md](docs/INDEX_DIFF.md) | [docs/CONTENT_CLUSTER.md](docs/CONTENT_CLUSTER.md)
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![Persian Optimized](https://img.shields.io/badge/Persian-Optimized-green.svg)]()
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
+
+### Project task board (v4.4.1)
+- **یادداشت تسک‌ها** — per-project Kanban at `/tools/project-tasks`
+- **Quick-add**: one-line title input; priority, assignee, due date, tags, notes in card **Details**
+- Subtasks, Jalali due dates, drag-drop between columns
+
+### Content calendar assignee (v4.4.0)
+- **تقویم محتوا** Kanban cards: assign each article to a project member (chip + dropdown)
+
+### Knowledge Exporter (v4.1.3) — URL pattern + live sampling
+- Segments by **URL pattern** (`/product/*`, `/blog/*`); samples pages to detect content type
+
+### Knowledge Exporter (v4.1.2) — segment selection
+- **Analyze sitemap** first → pick segments (sub-sitemap, content type, path)
+- Export only selected URLs; sample URLs shown per segment
+
+### Knowledge Exporter (v4.1.1) — RAG Markdown + Web UI
+- Export sitemap pages to **`knowledge_part_*.md`** + **`index.json`** for chatbot Knowledge Base
+- **Web UI**: `/tools/knowledge-export` (Mode 12) — progress bar, download links
+- CLI: `python -m src.knowledge_exporter --sitemap URL --output output/knowledge_export`
+
+### Internal Link Intelligence (v4.0.0) — Mode 11
+- **Link graph**: orphans, hubs (most inbound links), content islands from Site Index
+- **GSC Performance** Excel upload (Pages + Queries sheets)
+- **AI recommendations**: pick target products/pages → which site pages should link to them (semantic + GSC metrics)
+
+### Product Gap — تب «تولید بلاگ» (v3.9.0)
+- New tab **تولید بلاگ / Blog content** — move keywords here for article/content production lists
+- Bulk and per-row move include blog; archive/restore/export support `blog_suggestions`
+
+### Product Gap — bulk actions toolbar (all tabs)
+- Select multiple rows in any tab, then use the top bar: delete, archive, move to another tab, export
+- Bulk move API: `POST /api/v1/product-gap/move-bulk`
+
+## What's New in v3.8.0
+
+### Product Gap — move between tabs + archive all lists
+- **Move** keywords manually between **موجود در سایت**, **تامین محصول**, **پیشنهاد دسته**, and **تولید بلاگ** (per-row dropdown)
+- **Unified archive** tab for soft-delete from any list, with restore and Excel export
+- Curated placements survive re-analyze (`POST /api/v1/product-gap/move`, `source_list` on archive)
+
+## What's New in v3.7.2
+
+### Product Gap — AI actually runs + fresh table
+- AI matching runs for **all keywords** (when checkbox on) plus **LLM page-type** from URL/title/name
+- Results API is no-cache; summary shows timestamp + **AI** badge after each analyze
+- Checkbox **تطبیق دقیق‌تر با AI** is on by default
+
+## What's New in v3.7.0
+
+### Product Gap — smarter matching + richer table
+- Optional **AI matching (LLM + RAG)** for ambiguous keyword ↔ page pairs
+- Columns **نوع صفحه** (product / blog / category) and **کیوردهای همان محصول** (sibling keywords with volume)
+- Remove unwanted keywords from the table (single row or bulk selection); exclusions saved per project
+- Exact duplicate keywords deduped when merging multiple Excel uploads
+
+## What's New in v3.6.5
+
+### Product Gap — results display fix
+- Tables now appear reliably after long analysis (reload from saved snapshot)
+- Progressive row loading for large keyword tables (1000+ rows)
+
+## What's New in v3.6.4
+
+### Product Gap — keyword-first table + progress bar
+- Main tab shows the **full keyword research list** (sorted by search volume)
+- Matched product link opens via **icon only** (compact table)
+- Column **تکرار محصول در کیوردها** — how many research keywords point to the same site product
+- **Progress bar** during analysis (background job + polling; no frozen page)
+
+## What's New in v3.6.1
+
+### Product Gap — auto-import cluster Excel files
+- Previous Content Cluster keyword files (`seo_signal_*.xlsx`) are imported automatically on first Update
+- Fixes «No keyword Excel uploads» when excels were uploaded via Cluster before Product Gap existed
+
+## What's New in v3.6.0
+
+### Semantic matching + H2 editor + accessibility
+- Product Gap: keywords like «جالیز» and «خرید بازی فکری جالیز» match the same product
+- Kanban cards: delete / AI-rewrite / add H2 headings per card
+- Improved screen-reader labels and keyboard focus across new UI
+
+## What's New in v3.5.0
+
+### Product Gap + simpler Kanban + collapsible menu
+- Compare keyword Excel uploads with Site Index — see products on-site vs missing for procurement
+- Priority scoring by search volume and competition
+- Kanban reduced to 3 columns: Pending / In progress / Done
+- Sidebar toggle for more content space
+
+## What's New in v3.4.0
+
+### Site Index + internal link AI
+- Full site crawl from sitemap (products, categories, body text, JSON-LD)
+- Pause / resume indexing; refresh button to update content
+- Kanban card button: suggest which product/category to link internally (AI + rules)
+- Notification when AI model credits run out
+
+## What's New in v3.3.0
+
+### Content Audit — sitemap + scrape + calendar sync
+- Match live site pages to content calendar cards
+- Suggest updating the same card when SEO fields differ
+- Apply from task results page
+
+## What's New in v3.2.0
+
+### Calendar campaigns + Jalali picker + light theme
+- Per-project campaigns with tab UI and drag-between-campaigns
+- Jalali date picker for calendar start date in Content Cluster form
+- Light/dark theme toggle in the dashboard
+- Min/max H2 heading limits (0 = unlimited)
+- Info (i) field hints as hover tooltips only
+
+## What's New in v3.0.3
+
+### GapGPT DNS fallback + restart script
+- curl `--resolve` when DNS blocked (Cursor / foreign VPN)
+- `./scripts/restart_web.sh` — kill port 8000 and start fresh
+- Settings network panel shows accurate HTTPS status
+
+## What's New in v3.0.2
+
+### GapGPT + VPN troubleshooting
+- Settings shows live DNS/HTTPS status for GapGPT hosts
+- Fixed `gapgpt_cdn` provider alias
+- Clear guidance when international VPN blocks Iranian GapGPT API
+
+## What's New in v3.0.0
+
+### Content Cluster & Calendar (Mode 7)
+- SEOSignal Excel import → keyword clusters + suggested titles
+- Hybrid pipeline: rule/ML + GapGPT/OpenAI refinement
+- Content calendar Excel (1 post/day, easy → hard)
+- Settings UI for API keys (GapGPT, OpenAI, Claude, Gemini)
+
+## What's New in v2.9.4
+
+### Index Diff — sitemap visibility
+- Main panel lists all fetched sitemap XML files (index + sub-sitemaps) and page URL preview
+- Task page shows live fetch progress and full sitemap list on completion
+- Fixed stuck progress spinner after back navigation or timeout
 
 ## What's New in v2.8.0
 

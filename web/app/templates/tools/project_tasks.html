@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block heading %}{{ strings.project_tasks_title }}{% endblock %}
+{% block subheading %}{{ strings.project_tasks_sub }}{% endblock %}
+{% block content %}
+<div id="project-tasks-page" data-lang="{{ lang }}" class="kanban-page project-tasks-page">
+  <div class="kanban-toolbar">
+    <h2>{{ strings.project_tasks_title }}</h2>
+    <div class="kanban-toolbar-actions">
+      <a class="btn btn-ghost" href="/?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}">{{ strings.nav_dashboard }}</a>
+    </div>
+  </div>
+
+  <p class="muted project-tasks-hint {% if active_project_slug %}hidden{% endif %}" id="project-tasks-hint">
+    {{ strings.project_tasks_select_project }}
+  </p>
+
+  <form id="form-add-task" class="task-quick-add {% if not active_project_slug %}hidden{% endif %}" autocomplete="off">
+    <input
+      type="text"
+      name="title"
+      id="task-new-title"
+      class="task-quick-add-input"
+      required
+      placeholder="{{ strings.project_tasks_quick_placeholder }}"
+      aria-label="{{ strings.project_tasks_new_title }}"
+    />
+    <button type="submit" class="btn btn-primary task-quick-add-btn" title="{{ strings.project_tasks_add }}">
+      {{ strings.project_tasks_add }}
+    </button>
+  </form>
+
+  <div id="project-tasks-root" class="kanban-board project-tasks-board muted">
+    {% if lang == 'fa' %}پروژه را انتخاب کنید یا در حال بارگذاری…{% else %}Select a project or loading…{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/jalali.js?v={{ version }}"></script>
+<script>
+  window.PROJECT_TASKS_LABELS = {
+    pending: {{ strings.kanban_pending | tojson }},
+    in_progress: {{ strings.kanban_in_progress | tojson }},
+    done: {{ strings.kanban_done | tojson }},
+    notes: {{ strings.kanban_notes | tojson }},
+    move: {{ strings.kanban_move | tojson }},
+    empty: {{ strings.kanban_empty | tojson }},
+    saved: {{ strings.success | tojson }},
+    error: {{ strings.error | tojson }},
+    deleted: {{ strings.deleted | tojson }},
+    task_delete: {{ strings.item_delete | tojson }},
+    task_delete_confirm: {{ strings.project_tasks_delete_confirm | tojson }},
+    add_title_required: {{ strings.project_tasks_title_required | tojson }},
+    select_project: {{ strings.project_tasks_select_project | tojson }},
+    count: {{ strings.kanban_count | tojson }},
+    priority: {{ strings.project_tasks_priority | tojson }},
+    priority_high: {{ strings.project_tasks_priority_high | tojson }},
+    priority_medium: {{ strings.project_tasks_priority_medium | tojson }},
+    priority_low: {{ strings.project_tasks_priority_low | tojson }},
+    tags: {{ strings.project_tasks_tags | tojson }},
+    due_date: {{ strings.project_tasks_due_date | tojson }},
+    due_overdue: {{ strings.project_tasks_due_overdue | tojson }},
+    assignee: {{ strings.project_tasks_assignee | tojson }},
+    unassigned: {{ strings.project_tasks_unassigned | tojson }},
+    details: {{ strings.project_tasks_details | tojson }},
+    subtasks: {{ strings.project_tasks_subtasks | tojson }},
+    subtask_add: {{ strings.project_tasks_subtask_add | tojson }},
+    subtask_placeholder: {{ strings.project_tasks_subtask_placeholder | tojson }},
+    subtask_delete_confirm: {{ strings.project_tasks_subtask_delete_confirm | tojson }},
+  };
+</script>
+<script src="/static/project_tasks.js?v={{ version }}"></script>
+{% endblock %}

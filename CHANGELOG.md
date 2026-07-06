@@ -2,6 +2,458 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.4.1 (2026-07-07)
+
+### Project tasks — compact quick-add
+- Add-task form is now a single input + button (title only)
+- Priority, assignee, due date, tags, notes — edit inside each card under **Details**
+
+## v4.4.0 (2026-07-07)
+
+### Content calendar — assignee per card
+- Kanban cards on **تقویم محتوا / Content calendar board** can be assigned to project members
+- Assignee chip on card header + dropdown in card details
+- API: `GET /api/v1/calendar/members`, `PATCH` item `assigned_user_id`
+
+## v4.3.0 (2026-07-07)
+
+### Project tasks — UI, subtasks, assignee, Jalali dates
+- Redesigned task cards with collapsible details
+- **Subtasks** with checkbox, per-subtask assignee, progress counter
+- **Assign task** to project members
+- All due-date pickers use **Jalali (Shamsi)** calendar
+
+## v4.2.2 (2026-07-07)
+
+### Project tasks — menu
+- **یادداشت تسک‌ها** added to dashboard tool grid and sidebar tools list
+
+## v4.2.1 (2026-07-07)
+
+### Project tasks — priority, tags, due date
+- Task cards: **priority** (high/medium/low), **tags**, **due date** with overdue highlight
+- Sort by priority and due date within columns
+
+## v4.2.0 (2026-07-07)
+
+### Project task board (per-project Kanban)
+- New page **یادداشت تسک‌ها / Project tasks** at `/tools/project-tasks`
+- 3-column Kanban (pending / in progress / done) isolated per project
+- Add title + notes, drag-drop, autosave notes
+- Sidebar nav link; API: `/api/v1/project-tasks/*`
+
+## v4.1.3 (2026-07-05)
+
+### Knowledge Exporter — URL pattern segments + live sampling
+- Segments grouped by **URL path pattern** (`/product/*`, `/blog/*`, …) — not by sub-sitemap file
+- **Samples 3 pages per pattern**, detects content type from JSON-LD + page structure
+- UI shows pattern, inferred type badge, sample titles
+
+## v4.1.2 (2026-07-05)
+
+### Knowledge Exporter — sitemap analysis & segment selection
+- **Phase 1**: Analyze sitemap → segments by sub-sitemap, content type (product/category/blog/other), URL path prefix
+- **Phase 2**: Select segments with checkboxes → export only chosen URLs
+- API: `POST /api/v1/knowledge-export/analyze`
+
+## v4.1.1 (2026-07-05)
+
+### Knowledge Exporter — Web UI
+- New tool **خروجی Knowledge Base / Knowledge Base Export** at `/tools/knowledge-export` (Mode 12)
+- Background job with progress page, download links for `knowledge_part_*.md` and `index.json`
+- API: `/api/v1/knowledge-export/*`
+
+## v4.1.0 (2026-07-05)
+
+### Knowledge Exporter (RAG Markdown export)
+- New module **`knowledge_exporter`**: sitemap → RAG-ready Markdown parts for chatbot Knowledge Base
+- Reuses existing **`sitemap_fetch`** for URL discovery
+- Main content extraction via **trafilatura** + **readability-lxml** fallback + BeautifulSoup heuristics
+- Per-page YAML frontmatter (`url`, `title`, `description`, `crawled_at`, `lang`)
+- Part files `knowledge_part_01.md`, … with `\n\n---\n\n` document separators (max 500 KB or 50 pages per part)
+- **`index.json`** manifest with URL, title, part file, char count, status
+- Page cache (ETag / Last-Modified), duplicate content hash dedup, boilerplate line removal
+- CLI: `python -m src.knowledge_exporter` or `python main.py --mode knowledge-export`
+
+## v4.0.0 (2026-07-04)
+
+### Internal Link Intelligence (Mode 11)
+- New tool **لینک داخلی هوشمند / Internal Link Hub** at `/tools/internal-links`
+- **Graph analysis**: orphan pages, inbound link hubs, content islands from indexed `internal_links`
+- **GSC Performance** Excel import (Pages + Queries sheets)
+- **AI inbound link recommendations**: select target URLs → LLM suggests source pages, anchor text, placement
+- API: `/api/v1/internal-links/*`
+
+## v3.9.5 (2026-07-04)
+
+### Fix — Product Gap page 500
+- Fixed missing `list_uploads` import in `pages.py` (product-gap tool page)
+
+## v3.9.4 (2026-07-04)
+
+### Product Gap — strict project isolation (follow-up)
+- Delete per-upload and delete-all API + UI buttons on upload list
+- Switching project updates URL/cookie without stale data from previous project
+- Legacy Content Cluster files can only import into one project (global registry)
+- List/results endpoints no longer auto-import on every page load
+
+## v3.9.3 (2026-07-04)
+
+### Product Gap — project isolation fix
+- New projects no longer auto-import Excel files from global `output/web_uploads` (Content Cluster legacy folder)
+- Each project only shows uploads from its own `projects/{slug}/keyword_research/` folder
+- UI clears previous project data when switching projects; slug resolution prefers URL/cookie over stale select
+- Legacy cluster import only via explicit sync with `import_legacy=true`
+
+## v3.9.2 (2026-07-04)
+
+### Product Gap — fix bulk move dropdown reset
+- Bulk toolbar «انتقال به» dropdown no longer resets when choosing a tab (row-only auto-move handler)
+
+## v3.9.1 (2026-07-04)
+
+### Product Gap — selection + blog move fixes
+- **لغو انتخاب** button; selections clear on page refresh, tab switch, and after move/archive
+- Bulk move groups by source tab (fixes move to **تولید بلاگ** from keyword research tab)
+- Backend saves prepared blog row on move; error when move finds no keywords
+- Static assets cache-bust via `?v=` version query
+
+## v3.9.0 (2026-07-04)
+
+### Product Gap — تب «تولید بلاگ» (blog content)
+- New tab **تولید بلاگ / Blog content** for keywords moved to blog/article production lists
+- Manual move and bulk move support: on-site ↔ product ↔ category ↔ **blog**
+- Archive, restore, and Excel export include `blog_suggestions` list
+- Rows show `suggested_blog_title` and status **تولید بلاگ** in the main keyword table
+
+## v3.8.5 (2026-07-03)
+
+### Product Gap — fix SQLite «database is locked»
+- Connection timeout + `busy_timeout=30s`, WAL on every open
+- Schema migration runs once per process (not on every request)
+- Archive no longer opens nested DB connections inside one transaction
+- Connections closed after archive/restore writes
+
+## v3.8.4 (2026-07-03)
+
+### Product Gap — fix archive API error
+- Fixed missing `Optional` import on `ArchiveKeywordsRequest` / `MoveKeywordsBulkRequest` (Pydantic TypeAdapter error on archive)
+
+## v3.8.3 (2026-07-03)
+
+### Product Gap — move dropdown styling
+- Unified **gap-move-select** styling for bulk toolbar and per-row move dropdowns
+- Matches app theme (colors, border, focus ring, chevron, RTL)
+
+## v3.8.2 (2026-07-03)
+
+### Product Gap — bulk actions toolbar (all tabs)
+- Unified top bar: **select visible**, **delete**, **archive**, **move to tab**, **export**
+- Works on every tab with checkboxes (keyword research, on-site, procurement, categories, archive)
+- New API: `POST /api/v1/product-gap/move-bulk` for multi-keyword moves
+- Archive auto-detects source tab when selecting from «کیورد تحقیق»
+
+## v3.8.1 (2026-07-03)
+
+### Product Gap — tab persistence + category move fix
+- After move/archive/restore/delete the UI **stays on the same tab** (saved per project in sessionStorage)
+- Fixed row lookup when moving keywords to **پیشنهاد دسته / category suggestions**
+- Page no longer scrolls/jumps to the first tab on every action
+
+## v3.8.0 (2026-07-03)
+
+### Product Gap — manual move between tabs + unified archive
+- **انتقال دستی** between tabs: on-site ↔ product procurement ↔ category suggestions (dropdown per row)
+- **`POST /api/v1/product-gap/move`** persists manual placement across re-analyze
+- **آرشیو یکپارچه** for all tabs (on-site, تامین محصول, پیشنهاد دسته) with source column
+- Archive/restore/export generalized: `source_list` on archive, `archived_all` export
+- DB: `product_gap_manual_rows` for curated tab placement
+
+## v3.7.5 (2026-07-03)
+
+### Product Gap — soft-delete archive + Excel export
+- **تامین محصول**: انتقال به **آرشیو** (soft delete) — با re-import برنمی‌گردد مگر «بازگردانی»
+- Tab **آرشیو تامین** with restore per row or bulk
+- **خروجی اکسل** for product procurement and archived lists (`GET /export?list_name=…`)
+- Hard delete (جدول اصلی) remains permanent exclusion; archive is restorable
+
+## v3.7.4 (2026-07-02)
+
+### Product Gap — suggest new category pages
+- Category-intent keywords **without** a matching archive (e.g. «بازی دخترانه فکری») no longer match random products
+- New tab **پیشنهاد دسته / New categories** with suggested category title and action text
+- Main table: status **ایجاد دسته** + suggestion column; **تامین محصول** tab for SKU-level gaps only
+
+## v3.7.3 (2026-07-02)
+
+### Product Gap — category-intent keyword routing
+- Broad keywords like **«بازی دخترانه فکری»** (no brand/SKU) now route to **category** pages, not random products (e.g. Lego Barbie)
+- `match_intent`: category vs product; generic token overlap no longer matches single SKU pages
+- AI prompt rejects product URLs when `category_intent=true`
+- Category pages always included for intent routing even if «include categories» is unchecked
+
+## v3.7.2 (2026-06-30)
+
+### Product Gap — real AI pass + fresh results
+- **AI enabled by default** on analyze; checkbox value parsed reliably from FormData
+- When AI is on: **all keywords with candidates** go through LLM matching (not only borderline rows)
+- **AI page-type classification** from URL path, title, product name, and H1 (product / category / blog)
+- AI match results **override** rule scores when lookup exists
+- `/results` returns `Cache-Control: no-store`; browser fetch uses cache-bust timestamp
+- Summary shows **AI badge**, snapshot id suffix, and `analyzed_at` so you can confirm a new run
+
+## v3.7.1 (2026-06-30)
+
+### Product Gap — fix empty table body
+- Restored missing `gapTruncate()` helper — chunked table render (1000+ rows) failed silently and showed headers only
+- Safer per-cell error handling during chunked row build
+
+## v3.7.0 (2026-06-30)
+
+### Product Gap — AI matching, page types, sibling keywords, exclusions
+- Optional **تطبیق دقیق‌تر با AI** (LLM + RAG) for borderline keyword ↔ page matches
+- Table columns: **نوع صفحه** (product / blog / category) and **کیوردهای همان محصول** with volumes
+- Exact duplicate keywords removed when merging multiple Excel uploads
+- **Delete** single or selected keywords from the table (`POST /api/v1/product-gap/exclude`, persisted in SQLite)
+- Catalog matching includes blog pages; categories optional via checkbox
+- UI toolbar: select visible rows, delete selected; per-row delete button
+
+## v3.6.8 (2026-07-02)
+
+### Product Gap — fix NaN JSON error on refresh
+- Excel empty cells produced `NaN` in snapshot JSON → API failed with «not JSON compliant»
+- Sanitize NaN/Inf on save, load, and API response (existing snapshots repaired on read)
+
+## v3.6.7 (2026-07-02)
+
+### Product Gap — faster table load
+- API returns slim payload (~half size) — no duplicate on_site/missing arrays
+- Only the main «کیورد تحقیق» tab renders on load; other tabs load on click
+- Live row progress: «۱۲۰ از ۱۰۶۸ ردیف (۱۱٪)» while the table builds
+
+## v3.6.6 (2026-07-02)
+
+### Product Gap — results table always visible
+- Login required on product gap page (API data needs session)
+- Results section visible when a project is selected (no longer hidden below fold)
+- Server-side snapshot summary + «↓ مشاهده جدول» jump link
+- Reliable load from saved snapshot on page open
+
+## v3.6.5 (2026-07-02)
+
+### Product Gap — fix empty results after analysis
+- After job completes, reload results from `/api/v1/product-gap/results` (reliable display)
+- Job payload no longer embeds full 2MB+ analysis (prevents poll/render failures)
+- Chunked table rendering for 200+ rows + «در حال ساخت جدول…» loading state
+
+## v3.6.4 (2026-07-02)
+
+### Product Gap — keyword table + progress bar
+- Main table: full keyword research list first (sorted by volume)
+- Product link as icon only (clean table); product name shown as short text
+- Column **تکرار محصول در کیوردها** — how many research keywords map to the same site product
+- Background analysis with **real progress bar** (poll job, no page hang)
+
+## v3.6.3 (2026-07-02)
+
+### Product Gap — full tables (all rows)
+- Removed 300-row display cap — all keywords shown in scrollable tables
+- New tab **همه کیوردها** with complete master table (status, product, priority)
+- Product groups as flat table (one row per keyword per product)
+- Search filter across table rows; sticky table headers
+- Fixed silent load errors on page refresh
+
+## v3.6.2 (2026-07-02)
+
+### Product Gap — visible results section
+- Results moved to a full-width **«نتایج تحلیل»** panel below the form (auto-scroll after analyze)
+- Tabbed tables: **موجود در سایت** | **نیاز به تامین** | **گروه‌های محصول**
+- Loading hint during long analysis (3+ minutes)
+
+## v3.6.1 (2026-06-30)
+
+### Fix — Product Gap «No keyword Excel uploads»
+- Auto-sync keyword Excel from `projects/{slug}/keyword_research/` and project `input/`
+- **Legacy import:** existing `output/web_uploads/seo_signal_*.xlsx` files are copied and registered on first sync
+- Content Cluster uploads are now registered for Product Gap when a project is selected
+- Analyze button syncs disk files before running; project slug resolved from form, hidden field, or cookie
+- Fixed crash in analysis loop (`file_path` variable)
+
+## v3.6.0 (2026-06-30)
+
+### Semantic product matching (Product Gap)
+- Keyword ↔ product matching uses distinctive token overlap (not exact string match)
+- Strips commerce modifiers (خرید، ارزان، بازی فکری، …) to find core product identity
+- Example: «جالیز», «بازی فکری جالیز», «خرید بازی فکری جالیز» → same product
+- UI shows semantic product groups with combined search volume
+
+### Kanban H2 heading editor
+- Per-heading **Delete**, **Rewrite** (AI), and **Add H2** buttons on each card
+- API: `PATCH /api/v1/calendar/items/{id}` with `h2_headings`, `POST .../h2-rewrite`
+- Accessible labels (`aria-label`, `role="group"`, keyboard focus rings)
+
+### Accessibility improvements
+- Kanban columns/cards: `aria-labelledby`, `aria-label`, `aria-busy` on rewrite
+- Product gap tables: `scope="col"`, live region for stats
+- Focus-visible styles on icon buttons and sidebar toggle
+
+## v3.5.0 (2026-06-30)
+
+### Product Gap Analysis (Mode 10)
+- Upload one or more keyword research Excel files (SEOSignal) per project
+- **Update analysis** button: merges all uploads with latest Site Index products
+- Lists **on site** vs **needs procurement** with priority (search volume + competition)
+- API: `POST /api/v1/product-gap/upload`, `POST /api/v1/product-gap/analyze`, `GET /api/v1/product-gap/results`
+
+### Kanban — 3 columns
+- Columns simplified to: **در انتظار** / **در حال انجام** / **انجام شده**
+- Legacy statuses migrated automatically in SQLite
+
+### Collapsible sidebar
+- Toggle button to hide/show navigation for more reading space
+- Preference saved in `localStorage`
+
+## v3.4.0 (2026-06-30)
+
+### Site Index (Mode 9) — full crawl + product extraction
+- Sitemap fetch (existing engine) → scrape every page with body, JSON-LD, product fields
+- SQLite `site_pages` + `site_index_runs` per project with pause/resume checkpoint
+- Task UI: progress bar, Pause, Resume from last URL, Refresh index button
+- AI credit exhaustion detection + user notification to recharge
+
+### Internal link suggestions on calendar cards
+- Button on each Kanban card: AI + rule-based product/category link suggestions
+- Uses indexed site pages; saves `suggested_links` on the card
+- API: `POST /api/v1/calendar/items/{id}/link-suggestions`
+
+## v3.3.0 (2026-06-30)
+
+### Content Audit (Mode 8)
+- New tool: fetch sitemap → scrape pages → match calendar campaign cards
+- Suggests updating the **same** Kanban card when live title/H1/meta differ from plan
+- Apply: link URL + move to review, or adopt live SEO fields
+- Reuses `fetch_all_sitemap_urls` + `PageScraper` (same as Index Diff / Scraping)
+- Calendar items gain `url`, `scrape_snapshot`, `last_scraped_at` fields
+
+## v3.2.2 (2026-06-30)
+
+### Calendar — delete campaigns & items
+- Delete button (×) on each Kanban card
+- Delete button on each campaign tab (removes campaign + all items)
+- API: `DELETE /api/v1/calendar/items/{id}` and `DELETE /api/v1/calendar/campaigns/{id}`
+
+## v3.2.1 (2026-06-30)
+
+### Fix — SQLite migration for `campaign_id`
+- Existing v3.1 databases failed with `no such column: campaign_id`
+- Index creation moved to post-`ALTER TABLE` migration step
+- Added `scripts/migrate_db.py` for one-shot repair
+
+## v3.2.0 (2026-06-30)
+
+### Content calendar campaigns (per project)
+- Multiple campaigns per project (کمپین ۱، ۲، …)
+- Campaign tabs with drag-reorder; drag cards onto tabs to move between campaigns
+- Auto-create campaign on cluster import; optional campaign select in cluster form
+- Legacy boards backfilled into campaigns on first load
+
+### Jalali start date picker
+- Content Cluster form uses Jalali year/month/day selects (hidden ISO for API)
+
+### Light theme
+- Toggle in top bar (☾/☀); persisted in `localStorage`
+
+### H2 heading limits
+- Min/max H2 fields in cluster form (0 = unlimited / no minimum)
+- Wired into AI refine prompt and post-processing
+
+### UI — info tooltips
+- Field (i) hints are hover/focus CSS tooltips only (no click popover)
+
+## v3.1.0 (2026-06-30)
+
+### Content calendar Kanban board
+- SQLite persistence: boards, items, status, notes, checklist
+- 5 columns: planned → writing → review → scheduled → published
+- Jalali dates on cards; drag-and-drop or dropdown move
+- Auto-create board after cluster job completes
+
+### Multi-user login (username/password)
+- `/login` + session cookies
+- `scripts/create_user.py create USER PASS [--admin] [--project SLUG]`
+- Calendar board requires login; project ACL for editors
+
+### Content Cluster UI
+- Info (i) tooltips on method, model, calendar fields
+- Link to calendar board from tool page and task completion
+
+## v3.0.5 (2026-06-30)
+
+### Fix — Content Cluster task page
+- Back link and done message no longer redirect to Index Diff
+- Job type maps to correct tool (`content_cluster` → `/tools/content-cluster`)
+- Excel calendar sheet: H1, H2 headings, meta description columns
+
+## v3.0.4 (2026-06-30)
+
+### UI — form inputs & Content Cluster layout
+- Unified styles for `select`, `number`, `date`, `password` in all tool forms
+- Content Cluster page: 3-section layout (file / clustering / calendar)
+- File picker button styling; responsive 2-column form grid
+- Hide AI fields when rule/ML method selected
+
+## v3.0.3 (2026-06-30)
+
+### Fix — GapGPT works when DNS blocked (Cursor sandbox / VPN)
+- `gapgpt_curl.py`: curl `--resolve` fallback with known GapGPT IPs
+- Content cluster AI step uses curl transport for `gapgpt` provider
+- Network check: DNS fallback IP + HTTPS probe via `--resolve`
+- `scripts/restart_web.sh` for full port-8000 reset
+
+## v3.0.2 (2026-06-30)
+
+### Fix — GapGPT + VPN conflict
+- `gapgpt_cdn` preset now maps to `gapgpt` provider (was "Unknown provider")
+- Clearer Persian errors: DNS fail vs Cursor proxy 403 vs timeout
+- Settings page: **GapGPT network status** panel (`GET /api/v1/settings/network-check`)
+- Docs: VPN off → test GapGPT; run `./scripts/run_web.sh` from Terminal.app
+- Fix duplicate error text on failed model test; preserve DNS error in network check
+
+## v3.0.1 (2026-07-02)
+
+### Fix — GapGPT / OpenAI connection error in Cursor
+- OpenAI SDK now uses httpx with `trust_env=False` (ignores IDE-injected proxy)
+- GapGPT test falls back to `https://api.gapapi.com/v1` CDN endpoint
+- Clearer error message when proxy blocks outbound API calls
+
+## v3.0.0 (2026-07-02)
+
+### Mode 7 — Content Cluster & Calendar
+- Import SEOSignal Excel (keyword, volume, competition, word count)
+- Clustering methods: rule, ML, AI, **hybrid** (recommended)
+- Difficulty scoring (easy → hard) + content calendar export (1 post/day default)
+- CLI: `--mode content-cluster` with `--excel`, `--cluster-method`, `--posts-per-day`
+- Web UI: `/tools/content-cluster` with background job + Excel download
+
+### GapGPT API + Settings UI
+- `gapgpt` provider (`https://api.gapgpt.app/v1`) in AIModelManager
+- Settings page: add/test/delete AI models and API keys from the browser
+- `GET/POST /api/v1/settings/models` API
+
+## v2.9.5 (2026-07-01)
+
+### Fix — Index Diff form completely broken
+- Fixed JavaScript syntax error (`markSubmitted` declared twice) that prevented `app.js` from loading
+- Form was falling back to GET navigation instead of starting background jobs
+
+## v2.9.4 (2026-06-30)
+
+### Index Diff — sitemap list + stuck spinner fix
+- Main panel shows all fetched sitemap XML files (index + sub-sitemaps) and page URL preview
+- Task completion page shows live sitemap fetch list and full sources after diff
+- Sitemap sources saved in one step during diff (browser + server fetch paths)
+- Progress spinner no longer stuck after back navigation or timeout (30s job start limit)
+
 ## v2.9.3 (2025-07-01)
 
 ### Index Diff — sitemap list in sidebar, fix stuck spinner

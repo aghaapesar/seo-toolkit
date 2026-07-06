@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block heading %}{{ strings.calendar_kanban_title }}{% endblock %}
+{% block subheading %}{{ strings.calendar_kanban_sub }}{% endblock %}
+{% block content %}
+<div id="kanban-page" data-lang="{{ lang }}" class="kanban-page">
+  <div class="kanban-toolbar">
+    <h2 id="kanban-board-title">{{ strings.calendar_kanban_title }}</h2>
+    <div class="kanban-toolbar-actions">
+      {% if board_download %}
+      <a class="btn btn-ghost" href="{{ board_download }}" download>{{ strings.download }}</a>
+      {% endif %}
+      <a class="btn btn-ghost" href="/tools/site-index?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}">{{ strings.nav_site_index }}</a>
+      <a class="btn btn-ghost" href="/tools/content-audit?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}">{{ strings.nav_content_audit }}</a>
+      <a class="btn btn-ghost" href="/tools/content-cluster?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}">{{ strings.back_to_tool_content_cluster }}</a>
+    </div>
+  </div>
+  <div id="campaign-tabs" class="campaign-tabs {% if not active_project_slug %}hidden{% endif %}"></div>
+  <p class="muted campaign-hint {% if active_project_slug %}hidden{% endif %}">{{ strings.campaign_select_project }}</p>
+  <div id="kanban-root" class="kanban-board muted">
+    {% if lang == 'fa' %}در حال بارگذاری تقویم…{% else %}Loading calendar…{% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/jalali.js"></script>
+<script>
+  window.KANBAN_LABELS = {
+    title: {{ strings.calendar_kanban_title | tojson }},
+    pending: {{ strings.kanban_pending | tojson }},
+    in_progress: {{ strings.kanban_in_progress | tojson }},
+    done: {{ strings.kanban_done | tojson }},
+    planned: {{ strings.kanban_pending | tojson }},
+    writing: {{ strings.kanban_in_progress | tojson }},
+    review: {{ strings.kanban_in_progress | tojson }},
+    scheduled: {{ strings.kanban_in_progress | tojson }},
+    published: {{ strings.kanban_done | tojson }},
+    checklist: {{ strings.kanban_checklist | tojson }},
+    notes: {{ strings.kanban_notes | tojson }},
+    move: {{ strings.kanban_move | tojson }},
+    empty: {{ strings.kanban_empty | tojson }},
+    saved: {{ strings.success | tojson }},
+    error: {{ strings.error | tojson }},
+    missing: {{ strings.kanban_missing_params | tojson }},
+    campaign_add: {{ strings.campaign_add | tojson }},
+    campaign_prompt: {{ strings.campaign_prompt | tojson }},
+    campaign_default_name: {{ strings.campaign_default_name | tojson }},
+    campaign_empty: {{ strings.campaign_empty | tojson }},
+    campaign_delete: {{ strings.campaign_delete | tojson }},
+    campaign_delete_confirm: {{ strings.campaign_delete_confirm | tojson }},
+    item_delete: {{ strings.item_delete | tojson }},
+    item_delete_confirm: {{ strings.item_delete_confirm | tojson }},
+    deleted: {{ strings.deleted | tojson }},
+    linkSuggest: {{ strings.link_suggest | tojson }},
+    linkSuggestEmpty: {{ strings.link_suggest_empty | tojson }},
+    indexRequired: {{ strings.site_index_required | tojson }},
+    creditExhausted: {{ strings.credit_exhausted | tojson }},
+    h2Section: {{ strings.kanban_h2_section | tojson }},
+    h2Add: {{ strings.kanban_h2_add | tojson }},
+    h2Delete: {{ strings.kanban_h2_delete | tojson }},
+    h2Rewrite: {{ strings.kanban_h2_rewrite | tojson }},
+    h2Rewritten: {{ strings.kanban_h2_rewritten | tojson }},
+    h2AddPrompt: {{ strings.kanban_h2_add_prompt | tojson }},
+    h2DeleteConfirm: {{ strings.kanban_h2_delete_confirm | tojson }},
+    h2Empty: {{ strings.kanban_h2_empty | tojson }},
+    h2Actions: {{ strings.kanban_h2_actions | tojson }},
+    card: {{ strings.kanban_card | tojson }},
+    count: {{ strings.kanban_count | tojson }},
+    assignee: {{ strings.kanban_assignee | tojson }},
+    unassigned: {{ strings.kanban_unassigned | tojson }},
+  };
+</script>
+<script src="/static/calendar.js"></script>
+{% endblock %}
