@@ -7,47 +7,102 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}" />
+  <script>
+    (function () {
+      var t = localStorage.getItem("theme");
+      if (!t && window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches) t = "light";
+      if (t) document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
 </head>
 <body class="app-body" data-lang="{{ lang }}" data-active-project="{{ active_project_slug }}">
-  <div class="app-shell">
-    <aside class="sidebar">
+  <a href="#main-content" class="skip-link">{{ strings.skip_to_content }}</a>
+
+  <div class="app-shell" id="app-shell">
+    <button type="button" class="sidebar-toggle" id="btn-sidebar-toggle"
+      aria-label="{{ strings.nav_sidebar_toggle }}"
+      aria-controls="app-sidebar"
+      aria-expanded="true"
+      title="{{ strings.nav_sidebar_toggle }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+    </button>
+
+    <aside class="sidebar" id="app-sidebar" aria-label="{% if lang == 'fa' %}ناوبری اصلی{% else %}Main navigation{% endif %}">
       <div class="brand">
-        <div class="brand-mark">ST</div>
+        <div class="brand-mark" aria-hidden="true">ST</div>
         <div>
           <strong>{{ strings.app_name }}</strong>
           <span>{{ strings.app_tagline }}</span>
         </div>
       </div>
-      <nav class="nav">
+
+      <div class="nav-search-wrap">
+        <label class="sr-only" for="nav-tool-search">{{ strings.nav_search_tools }}</label>
+        <input type="search" id="nav-tool-search" class="nav-search-input"
+          placeholder="{{ strings.nav_search_tools }}" autocomplete="off" />
+      </div>
+
+      <nav class="nav" id="app-nav">
         {% set project_qs = '&project=' ~ active_project_slug if active_project_slug else '' %}
-        <a href="/?lang={{ lang }}{{ project_qs }}" class="nav-link {% if tool_id is none and page_title != strings.nav_projects and page_title != 'Projects' and page_title != 'پروژه‌ها' %}active{% endif %}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-          {{ strings.nav_dashboard }}
-        </a>
-        {% for tool in tools %}
-        <a href="{{ tool.route }}?lang={{ lang }}{{ project_qs }}" class="nav-link {% if tool_id is not none and tool_id == tool.id %}active{% endif %}">
-          <span class="nav-dot {{ tool.gradient }}"></span>
-          {% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}
-        </a>
+        {% set on_dashboard = tool_id is none and page_title != strings.nav_projects and page_title != 'Projects' and page_title != 'پروژه‌ها' and page_title != strings.nav_settings %}
+
+        <div class="nav-section">
+          <a href="/?lang={{ lang }}{{ project_qs }}" class="nav-link {% if on_dashboard and page_title != strings.nav_settings %}active{% endif %}"
+            {% if on_dashboard and page_title != strings.nav_settings %}aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            {{ strings.nav_dashboard }}
+          </a>
+        </div>
+
+        {% for group in tool_groups %}
+        <details class="nav-group" open data-nav-group="{{ group.id }}">
+          <summary class="nav-group-label">{{ group.label }}</summary>
+          <div class="nav-group-links">
+            {% for tool in group.tools %}
+            <a href="{{ tool.route }}?lang={{ lang }}{{ project_qs }}"
+              class="nav-link nav-tool-link {% if tool_id is not none and tool_id == tool.id %}active{% endif %}"
+              data-search="{% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}"
+              {% if tool_id is not none and tool_id == tool.id %}aria-current="page"{% endif %}>
+              <span class="nav-dot {{ tool.gradient }}" aria-hidden="true"></span>
+              {% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}
+            </a>
+            {% endfor %}
+            {% if group.id == 'workflow' %}
+            <a href="/tools/content-cluster/calendar?lang={{ lang }}{{ project_qs }}" class="nav-link nav-tool-link"
+              data-search="{{ strings.nav_calendar }}"
+              {% if tool_id == 'content-cluster' and 'calendar' in request.url.path %}aria-current="page"{% endif %}>
+              <span class="nav-dot g-violet" aria-hidden="true"></span>
+              {{ strings.nav_calendar }}
+            </a>
+            {% endif %}
+          </div>
+        </details>
         {% endfor %}
-        <a href="/settings?lang={{ lang }}{{ project_qs }}" class="nav-link">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-          {{ strings.nav_settings }}
-        </a>
-        <a href="/projects?lang={{ lang }}{{ project_qs }}" class="nav-link {% if page_title == strings.nav_projects or page_title == 'Projects' or page_title == 'پروژه‌ها' %}active{% endif %}">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-          {{ strings.nav_projects }}
-        </a>
-        <a href="/docs" class="nav-link" target="_blank">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          {{ strings.nav_api }}
-        </a>
+
+        <div class="nav-section nav-section-system">
+          <p class="nav-group-label-static">{{ strings.nav_group_system }}</p>
+          <a href="/projects?lang={{ lang }}{{ project_qs }}" class="nav-link {% if page_title == strings.nav_projects or page_title == 'Projects' or page_title == 'پروژه‌ها' %}active{% endif %}"
+            {% if page_title == strings.nav_projects or page_title == 'Projects' or page_title == 'پروژه‌ها' %}aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            {{ strings.nav_projects }}
+          </a>
+          <a href="/settings?lang={{ lang }}{{ project_qs }}" class="nav-link {% if page_title == strings.nav_settings %}active{% endif %}"
+            {% if page_title == strings.nav_settings %}aria-current="page"{% endif %}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            {{ strings.nav_settings }}
+          </a>
+          <a href="/docs" class="nav-link" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            {{ strings.nav_api }}
+          </a>
+        </div>
       </nav>
+
       <div class="sidebar-foot">
-        <div class="lang-switch">
-          <a href="?lang=en{{ project_qs }}" class="{% if lang == 'en' %}active{% endif %}">EN</a>
-          <a href="?lang=fa{{ project_qs }}" class="{% if lang == 'fa' %}active{% endif %}">FA</a>
+        <div class="lang-switch" role="group" aria-label="{% if lang == 'fa' %}زبان{% else %}Language{% endif %}">
+          <a href="?lang=en{{ project_qs }}" class="{% if lang == 'en' %}active{% endif %}" {% if lang == 'en' %}aria-current="true"{% endif %}>EN</a>
+          <a href="?lang=fa{{ project_qs }}" class="{% if lang == 'fa' %}active{% endif %}" {% if lang == 'fa' %}aria-current="true"{% endif %}>FA</a>
         </div>
         <small>v{{ version }}</small>
       </div>
@@ -62,8 +117,8 @@
         <div class="topbar-actions">
           {% if projects %}
           <form class="project-switcher" method="get" action="">
-            <label class="sr-only">{{ strings.select_project }}</label>
-            <select name="project" id="global-project-select" onchange="setActiveProject(this.value)">
+            <label class="sr-only" for="global-project-select">{{ strings.select_project }}</label>
+            <select name="project" id="global-project-select" onchange="setActiveProject(this.value)" aria-label="{{ strings.select_project }}">
               <option value="">{{ strings.no_project }}</option>
               {% for p in projects %}
               <option value="{{ p.slug }}" {% if active_project and active_project.slug == p.slug %}selected{% endif %}>{{ p.name }}</option>
@@ -72,20 +127,35 @@
             <input type="hidden" name="lang" value="{{ lang }}" />
           </form>
           {% endif %}
-          <div class="topbar-badge {% if config_exists %}ok{% else %}warn{% endif %}">
+          <div class="topbar-badge {% if config_exists %}ok{% else %}warn{% endif %}" role="status">
             {% if config_exists %}{{ strings.config_ok }}{% else %}{{ strings.config_missing }}{% endif %}
           </div>
+          <button type="button" class="btn-theme" id="btn-theme-toggle"
+            aria-label="{% if lang == 'fa' %}تغییر تم{% else %}Toggle theme{% endif %}"
+            title="{% if lang == 'fa' %}تم روشن/تاریک{% else %}Light/Dark theme{% endif %}">☾</button>
+          {% if current_user %}
+          <span class="user-pill muted">{{ current_user.display_name }}</span>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-logout">{{ strings.logout }}</button>
+          {% else %}
+          <a href="/login?lang={{ lang }}" class="btn btn-ghost btn-sm">{{ strings.nav_login }}</a>
+          {% endif %}
         </div>
       </header>
 
-      <main class="content">
+      <main class="content" id="main-content" tabindex="-1">
         {% block content %}{% endblock %}
       </main>
     </div>
   </div>
 
-  <div id="toast" class="toast hidden" role="status"></div>
-  <script src="/static/app.js"></script>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+  <script src="/static/app.js?v={{ version }}"></script>
+  <script>
+    document.getElementById("btn-logout")?.addEventListener("click", async () => {
+      await fetch("/api/v1/auth/logout", { method: "POST" });
+      window.location.reload();
+    });
+  </script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

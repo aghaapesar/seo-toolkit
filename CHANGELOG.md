@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.5.0 (2026-07-07)
+
+### Panel UX redesign — navigation, accessibility, live dashboard
+- Sidebar tools grouped by category (Core SEO, Index, Content, Growth, Workflow) with search filter
+- Skip-to-content link, focus-visible styles, reduced-motion support, `aria-current` on active nav
+- **Dashboard** filled with live KPIs, bar/donut charts, and recent background jobs (`GET /api/v1/dashboard/summary`)
+- Tool cards on home page grouped by the same categories
+
 ## v4.4.1 (2026-07-07)
 
 ### Project tasks — compact quick-add

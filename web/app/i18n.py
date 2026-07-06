@@ -1,6 +1,6 @@
 """Bilingual UI strings for Seo Toolkit web interface."""
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 SUPPORTED_LANGS = ("en", "fa")
 
@@ -9,6 +9,33 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "app_name": "Seo Toolkit",
         "app_tagline": "Persian-first SEO automation suite",
         "nav_dashboard": "Dashboard",
+        "skip_to_content": "Skip to main content",
+        "nav_search_tools": "Search tools…",
+        "nav_group_core": "Core SEO",
+        "nav_group_index": "Index & crawl",
+        "nav_group_content": "Content planning",
+        "nav_group_growth": "Growth & gaps",
+        "nav_group_workflow": "Workflow",
+        "nav_group_system": "System",
+        "dash_welcome": "Welcome back",
+        "dash_sub": "Project overview, recent jobs, and quick access to tools.",
+        "dash_select_project": "Select a project from the top bar to see live metrics.",
+        "dash_loading": "Loading metrics…",
+        "dash_kpi_pages": "Indexed pages",
+        "dash_kpi_gap": "Product gaps",
+        "dash_kpi_calendar": "Calendar items",
+        "dash_kpi_tasks": "Open tasks",
+        "dash_kpi_campaigns": "Campaigns",
+        "dash_kpi_projects": "Projects",
+        "dash_chart_tasks": "Tasks by status",
+        "dash_chart_calendar": "Calendar by status",
+        "dash_chart_pages": "Pages by type",
+        "dash_recent_jobs": "Recent background jobs",
+        "dash_no_jobs": "No jobs yet — run a tool to see progress here.",
+        "dash_quick_tools": "Tools by category",
+        "dash_gap_analyzed": "Last analyzed",
+        "dash_not_analyzed": "Not analyzed yet",
+        "dash_open_tool": "Open",
         "nav_content": "Content Analysis",
         "nav_scraping": "SEO Scraping",
         "nav_generation": "Content Generation",
@@ -325,6 +352,33 @@ STRINGS: Dict[str, Dict[str, str]] = {
         "app_name": "Seo Toolkit",
         "app_tagline": "سوئیت خودکارسازی سئو با تمرکز فارسی",
         "nav_dashboard": "داشبورد",
+        "skip_to_content": "رفتن به محتوای اصلی",
+        "nav_search_tools": "جستجوی ابزار…",
+        "nav_group_core": "سئو پایه",
+        "nav_group_index": "ایندکس و خزش",
+        "nav_group_content": "برنامه‌ریزی محتوا",
+        "nav_group_growth": "رشد و شکاف",
+        "nav_group_workflow": "گردش کار",
+        "nav_group_system": "سیستم",
+        "dash_welcome": "خوش آمدید",
+        "dash_sub": "نمای کلی پروژه، jobهای اخیر و دسترسی سریع به ابزارها.",
+        "dash_select_project": "از نوار بالا پروژه را انتخاب کنید تا آمار زنده ببینید.",
+        "dash_loading": "در حال بارگذاری آمار…",
+        "dash_kpi_pages": "صفحات ایندکس‌شده",
+        "dash_kpi_gap": "شکاف محصول",
+        "dash_kpi_calendar": "آیتم تقویم",
+        "dash_kpi_tasks": "تسک باز",
+        "dash_kpi_campaigns": "کمپین",
+        "dash_kpi_projects": "پروژه",
+        "dash_chart_tasks": "تسک‌ها بر اساس وضعیت",
+        "dash_chart_calendar": "تقویم بر اساس وضعیت",
+        "dash_chart_pages": "صفحات بر اساس نوع",
+        "dash_recent_jobs": "jobهای پس‌زمینه اخیر",
+        "dash_no_jobs": "هنوز job نیست — یک ابزار را اجرا کنید.",
+        "dash_quick_tools": "ابزارها بر اساس دسته",
+        "dash_gap_analyzed": "آخرین تحلیل",
+        "dash_not_analyzed": "هنوز تحلیل نشده",
+        "dash_open_tool": "باز کردن",
         "nav_content": "تحلیل محتوا",
         "nav_scraping": "اسکرپ سئو",
         "nav_generation": "تولید محتوا",
@@ -773,6 +827,61 @@ TOOLS = [
 ]
 
 
+# Tool grouping for sidebar and dashboard (display only).
+TOOL_GROUP_ORDER = ("core", "index", "content", "growth", "workflow")
+
+TOOL_GROUP_LABEL_KEYS = {
+    "core": "nav_group_core",
+    "index": "nav_group_index",
+    "content": "nav_group_content",
+    "growth": "nav_group_growth",
+    "workflow": "nav_group_workflow",
+}
+
+TOOL_GROUP_MAP = {
+    "content": "core",
+    "scraping": "core",
+    "generation": "core",
+    "linking": "core",
+    "synonyms": "core",
+    "index-diff": "index",
+    "site-index": "index",
+    "content-cluster": "content",
+    "content-audit": "content",
+    "knowledge-export": "content",
+    "product-gap": "growth",
+    "internal-links": "growth",
+    "project-tasks": "workflow",
+}
+
+
+def build_tool_groups(lang: str) -> List[Dict[str, Any]]:
+    """
+    Group TOOLS for navigation and dashboard sections.
+
+    Output:
+        Ordered list of {id, label, tools}.
+    """
+    buckets: Dict[str, List[Dict[str, Any]]] = {g: [] for g in TOOL_GROUP_ORDER}
+    for tool in TOOLS:
+        group_id = TOOL_GROUP_MAP.get(tool["id"], "core")
+        buckets.setdefault(group_id, []).append(tool)
+    groups: List[Dict[str, Any]] = []
+    for group_id in TOOL_GROUP_ORDER:
+        items = buckets.get(group_id) or []
+        if not items:
+            continue
+        label_key = TOOL_GROUP_LABEL_KEYS.get(group_id, "nav_group_core")
+        groups.append(
+            {
+                "id": group_id,
+                "label": t(lang, label_key),
+                "tools": items,
+            }
+        )
+    return groups
+
+
 def get_lang(request) -> str:
     """Resolve language from query param or cookie."""
     lang = request.query_params.get("lang") or request.cookies.get("lang", "fa")
@@ -810,6 +919,7 @@ def page_context(request, page_title: str, **extra: Any) -> Dict[str, Any]:
         "page_title": page_title,
         "strings": strings_for(lang),
         "tools": TOOLS,
+        "tool_groups": build_tool_groups(lang),
         "version": __version__,
         "config_exists": Path_exists_config(),
         "tool_id": extra.pop("tool_id", None),

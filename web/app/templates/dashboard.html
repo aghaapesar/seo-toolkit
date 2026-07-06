@@ -1,38 +1,115 @@
 {% extends "base.html" %}
-{% block subheading %}{{ strings.hero_sub }}{% endblock %}
+{% block heading %}{{ strings.nav_dashboard }}{% endblock %}
+{% block subheading %}{{ strings.dash_sub }}{% endblock %}
 {% block content %}
-<section class="hero">
-  <div class="hero-glow"></div>
-  <h2 class="hero-title">{{ strings.hero_title }}</h2>
-  <p class="hero-lead">{{ strings.hero_sub }}</p>
-</section>
-
-<section class="stats-row">
-  <div class="stat-card">
-    <span class="stat-num">6</span>
-    <span class="stat-label">{% if lang == 'fa' %}ابزار{% else %}Tools{% endif %}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">FA</span>
-    <span class="stat-label">{% if lang == 'fa' %}بهینه فارسی{% else %}Persian-first{% endif %}</span>
-  </div>
-  <div class="stat-card">
-    <span class="stat-num">AI</span>
-    <span class="stat-label">Multi-model</span>
-  </div>
-</section>
-
-<h2 class="section-title">{{ strings.features }}</h2>
-<div class="tool-grid">
-  {% for tool in tools %}
-  <article class="tool-card {{ tool.gradient }}">
-    <div class="tool-card-head">
-      <span class="tool-icon">{{ tool.id[0]|upper }}</span>
-      <h3>{% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}</h3>
+<div id="dashboard-page" class="dashboard-page" data-lang="{{ lang }}">
+  <section class="dash-hero" aria-labelledby="dash-hero-title">
+    <div class="dash-hero-text">
+      <h2 id="dash-hero-title" class="dash-hero-title">
+        {{ strings.dash_welcome }}{% if active_project %}, {{ active_project.name }}{% endif %}
+      </h2>
+      <p class="muted dash-hero-lead">{{ strings.dash_sub }}</p>
+      {% if not active_project_slug %}
+      <p class="dash-hint" role="status">{{ strings.dash_select_project }}</p>
+      {% endif %}
     </div>
-    <p>{{ strings[tool.desc_key] }}</p>
-    <a href="{{ tool.route }}?lang={{ lang }}" class="btn btn-primary">{{ strings.run_tool }}</a>
-  </article>
+    <div class="dash-hero-badges" aria-label="{% if lang == 'fa' %}وضعیت سیستم{% else %}System status{% endif %}">
+      <span class="dash-pill {% if config_exists %}ok{% else %}warn{% endif %}">
+        {% if config_exists %}{{ strings.config_ok }}{% else %}{{ strings.config_missing }}{% endif %}
+      </span>
+      <span class="dash-pill">v{{ version }}</span>
+      {% if current_user %}
+      <span class="dash-pill user">{{ current_user.display_name }}</span>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="dash-kpi-grid" id="dash-kpi-grid" aria-live="polite" aria-busy="true">
+    <p class="muted dash-loading">{{ strings.dash_loading }}</p>
+  </section>
+
+  <div class="dash-charts-grid">
+    <section class="dash-panel" aria-labelledby="dash-chart-tasks-title">
+      <h3 id="dash-chart-tasks-title" class="dash-panel-title">{{ strings.dash_chart_tasks }}</h3>
+      <div id="dash-chart-tasks" class="dash-bar-chart muted">{{ strings.dash_loading }}</div>
+    </section>
+    <section class="dash-panel" aria-labelledby="dash-chart-calendar-title">
+      <h3 id="dash-chart-calendar-title" class="dash-panel-title">{{ strings.dash_chart_calendar }}</h3>
+      <div id="dash-chart-calendar" class="dash-bar-chart muted">{{ strings.dash_loading }}</div>
+    </section>
+    <section class="dash-panel dash-panel-wide" aria-labelledby="dash-chart-pages-title">
+      <h3 id="dash-chart-pages-title" class="dash-panel-title">{{ strings.dash_chart_pages }}</h3>
+      <div id="dash-chart-pages" class="dash-type-chart muted">{{ strings.dash_loading }}</div>
+    </section>
+  </div>
+
+  <section class="dash-panel dash-jobs-panel" aria-labelledby="dash-jobs-title">
+    <h3 id="dash-jobs-title" class="dash-panel-title">{{ strings.dash_recent_jobs }}</h3>
+    <div id="dash-recent-jobs" class="dash-jobs-list muted">{{ strings.dash_loading }}</div>
+  </section>
+
+  {% for group in tool_groups %}
+  <section class="dash-tool-section" aria-labelledby="dash-group-{{ group.id }}">
+    <h3 id="dash-group-{{ group.id }}" class="section-title">{{ group.label }}</h3>
+    <div class="tool-grid tool-grid-compact">
+      {% for tool in group.tools %}
+      <article class="tool-card {{ tool.gradient }}">
+        <div class="tool-card-head">
+          <span class="tool-icon" aria-hidden="true">{{ tool.id[0]|upper }}</span>
+          <h4>{% if lang == 'fa' %}{{ tool.title_fa }}{% else %}{{ tool.title_en }}{% endif %}</h4>
+        </div>
+        <p>{{ strings[tool.desc_key] }}</p>
+        <a href="{{ tool.route }}?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}" class="btn btn-primary btn-sm">
+          {{ strings.dash_open_tool }}
+        </a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
   {% endfor %}
+
+  <section class="dash-tool-section" aria-labelledby="dash-group-workflow-extra">
+    <h3 id="dash-group-workflow-extra" class="section-title">{{ strings.nav_group_workflow }}</h3>
+    <div class="tool-grid tool-grid-compact">
+      <article class="tool-card g-violet">
+        <div class="tool-card-head">
+          <span class="tool-icon" aria-hidden="true">C</span>
+          <h4>{{ strings.nav_calendar }}</h4>
+        </div>
+        <p>{% if lang == 'fa' %}برد کانبان تقویم محتوا و پیگیری انتشار{% else %}Content calendar Kanban and publish tracking{% endif %}</p>
+        <a href="/tools/content-cluster/calendar?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}" class="btn btn-primary btn-sm">
+          {{ strings.dash_open_tool }}
+        </a>
+      </article>
+    </div>
+  </section>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.DASHBOARD_LABELS = {
+    loading: {{ strings.dash_loading | tojson }},
+    selectProject: {{ strings.dash_select_project | tojson }},
+    kpiPages: {{ strings.dash_kpi_pages | tojson }},
+    kpiGap: {{ strings.dash_kpi_gap | tojson }},
+    kpiCalendar: {{ strings.dash_kpi_calendar | tojson }},
+    kpiTasks: {{ strings.dash_kpi_tasks | tojson }},
+    kpiCampaigns: {{ strings.dash_kpi_campaigns | tojson }},
+    kpiProjects: {{ strings.dash_kpi_projects | tojson }},
+    chartTasks: {{ strings.dash_chart_tasks | tojson }},
+    chartCalendar: {{ strings.dash_chart_calendar | tojson }},
+    chartPages: {{ strings.dash_chart_pages | tojson }},
+    noJobs: {{ strings.dash_no_jobs | tojson }},
+    gapAnalyzed: {{ strings.dash_gap_analyzed | tojson }},
+    notAnalyzed: {{ strings.dash_not_analyzed | tojson }},
+    pending: {{ strings.kanban_pending | tojson }},
+    inProgress: {{ strings.kanban_in_progress | tojson }},
+    done: {{ strings.kanban_done | tojson }},
+    statusRunning: {{ strings.task_status_running | tojson }},
+    statusCompleted: {{ strings.task_status_completed | tojson }},
+    statusFailed: {{ strings.task_status_failed | tojson }},
+    statusPending: {{ strings.task_status_pending | tojson }},
+  };
+</script>
+<script src="/static/dashboard.js?v={{ version }}"></script>
 {% endblock %}

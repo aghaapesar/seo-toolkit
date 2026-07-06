@@ -122,6 +122,21 @@ class JobManager:
         with self._lock:
             return self._jobs.get(job_id)
 
+    def list_recent(self, limit: int = 20) -> List[JobRecord]:
+        """
+        Return newest jobs first for dashboard display.
+
+        Output:
+            Up to `limit` jobs sorted by updated_at descending.
+        """
+        with self._lock:
+            jobs = sorted(
+                self._jobs.values(),
+                key=lambda j: j.updated_at,
+                reverse=True,
+            )
+            return jobs[: max(1, int(limit))]
+
     def require(self, job_id: str) -> JobRecord:
         """Return a job or raise KeyError."""
         job = self.get(job_id)

@@ -1,4 +1,4 @@
-# Seo Toolkit v4.4.1
+# Seo Toolkit v4.5.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -20,6 +20,11 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
+
+### Panel UX redesign (v4.5.0)
+- Grouped sidebar navigation + tool search
+- Live dashboard: KPIs, task/calendar charts, page-type donut, recent jobs
+- Accessibility: skip link, keyboard focus, collapsible nav sections
 
 ### Project task board (v4.4.1)
 - **یادداشت تسک‌ها** — per-project Kanban at `/tools/project-tasks`

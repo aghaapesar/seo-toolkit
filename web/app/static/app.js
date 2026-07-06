@@ -776,9 +776,80 @@ function initGenerationForm(lang) {
   });
 }
 
+function initNavSearch() {
+  const input = document.getElementById("nav-tool-search");
+  if (!input) return;
+  input.addEventListener("input", () => {
+    const q = input.value.trim().toLowerCase();
+    document.querySelectorAll(".nav-tool-link").forEach((link) => {
+      const text = (link.dataset.search || link.textContent || "").toLowerCase();
+      link.classList.toggle("nav-hidden", Boolean(q) && !text.includes(q));
+    });
+    document.querySelectorAll(".nav-group").forEach((group) => {
+      const anyVisible = group.querySelector(".nav-tool-link:not(.nav-hidden)");
+      group.classList.toggle("nav-group-empty", !anyVisible && Boolean(q));
+    });
+  });
+}
+
+function initNavGroups() {
+  document.querySelectorAll(".nav-group").forEach((details) => {
+    const id = details.dataset.navGroup;
+    if (!id) return;
+    const key = `nav-group-${id}`;
+    if (localStorage.getItem(key) === "closed") details.open = false;
+    details.addEventListener("toggle", () => {
+      localStorage.setItem(key, details.open ? "open" : "closed");
+    });
+  });
+}
+
+function initSidebarCollapse() {
+  const shell = document.getElementById("app-shell");
+  const btn = document.getElementById("btn-sidebar-toggle");
+  if (!shell || !btn) return;
+  const key = "sidebar-collapsed";
+  const apply = (collapsed) => {
+    shell.classList.toggle("sidebar-collapsed", collapsed);
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  };
+  apply(localStorage.getItem(key) === "1");
+  btn.addEventListener("click", () => {
+    const next = !shell.classList.contains("sidebar-collapsed");
+    apply(next);
+    localStorage.setItem(key, next ? "1" : "0");
+  });
+}
+
+/** Apply saved theme (dark/light) from localStorage. */
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  const prefersLight = window.matchMedia?.("(prefers-color-scheme: light)")?.matches;
+  const theme = saved || (prefersLight ? "light" : "dark");
+  document.documentElement.setAttribute("data-theme", theme);
+  const btn = document.getElementById("btn-theme-toggle");
+  if (btn) {
+    btn.setAttribute("aria-pressed", theme === "light" ? "true" : "false");
+    btn.textContent = theme === "light" ? "☀" : "☾";
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute("data-theme") || "dark";
+  const next = current === "light" ? "dark" : "light";
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  initTheme();
+}
+
 // Sticky project + language links on load
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
+  initSidebarCollapse();
+  initNavSearch();
+  initNavGroups();
   syncProjectSelects();
+  document.getElementById("btn-theme-toggle")?.addEventListener("click", toggleTheme);
 });
 
 // Persist language preference
