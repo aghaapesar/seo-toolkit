@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}" dir="{{ dir }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ strings.login_title }} · {{ strings.app_name }}</title>
+  <link rel="stylesheet" href="/static/style.css?v={{ version }}" />
+</head>
+<body class="app-body login-body" data-lang="{{ lang }}">
+  <div class="login-wrap">
+    <div class="login-card panel">
+      <h1>{{ strings.login_title }}</h1>
+      <p class="muted">{{ strings.login_sub }}</p>
+      <form id="form-login" class="stack-form">
+        <label>
+          <span>{{ strings.login_username }}</span>
+          <input type="text" name="username" autocomplete="username" required />
+        </label>
+        <label>
+          <span>{{ strings.login_password }}</span>
+          <input type="password" name="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit" class="btn btn-primary btn-lg">{{ strings.login_submit }}</button>
+      </form>
+      <p class="muted login-hint">{{ strings.login_hint }}</p>
+    </div>
+  </div>
+  <div id="toast" class="toast hidden" role="status"></div>
+  <script src="/static/app.js?v={{ version }}"></script>
+  <script>
+    bindForm("form-login", async (form, lg) => {
+      const res = await fetch("/api/v1/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: form.username.value,
+          password: form.password.value,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || "Login failed");
+      const next = new URLSearchParams(window.location.search).get("next");
+      window.location.href = next || `/?lang=${lg}`;
+    });
+  </script>
+</body>
+</html>

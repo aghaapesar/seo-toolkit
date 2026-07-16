@@ -399,6 +399,34 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_project_subtasks_task ON project_task_subtasks(task_id)"
     )
 
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS knowledge_export_pages (
+            id TEXT PRIMARY KEY,
+            project_slug TEXT NOT NULL,
+            url TEXT NOT NULL,
+            page_type TEXT NOT NULL DEFAULT 'other',
+            slug TEXT,
+            relative_path TEXT,
+            title TEXT,
+            content_hash TEXT,
+            sitemap_lastmod TEXT,
+            status TEXT NOT NULL DEFAULT 'new',
+            exported_at TEXT,
+            first_downloaded_at TEXT,
+            error TEXT,
+            updated_at TEXT NOT NULL,
+            UNIQUE(project_slug, url)
+        )
+        """
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ke_pages_project ON knowledge_export_pages(project_slug)"
+    )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ke_pages_status ON knowledge_export_pages(project_slug, status)"
+    )
+
     # Migrate legacy Kanban statuses (5 columns → 3 columns).
     if _table_exists(conn, "calendar_items"):
         status_map = (

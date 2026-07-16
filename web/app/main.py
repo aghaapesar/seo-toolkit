@@ -1,20 +1,24 @@
 """FastAPI application for Seo Toolkit."""
 
 import logging
+import os
 import traceback
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 from src import __version__
 from web.app.routers import (
+    auth,
     calendar_api,
     dashboard_api,
     health,
     index_diff,
     jobs,
+    knowledge_export,
     modes,
     pages,
     project_tasks,
@@ -29,6 +33,13 @@ app = FastAPI(
     title="Seo Toolkit API",
     description="Persian SEO toolkit — full UI and REST API",
     version=__version__,
+)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.environ.get("SECRET_KEY", "seo-toolkit-dev-secret-change-me"),
+    same_site="lax",
+    https_only=False,
 )
 
 
@@ -48,6 +59,7 @@ static_dir = BASE_DIR / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(calendar_api.router)
 app.include_router(dashboard_api.router)
 app.include_router(project_tasks.router)
@@ -57,3 +69,4 @@ app.include_router(sitemap_proxy.router)
 app.include_router(modes.router)
 app.include_router(projects.router)
 app.include_router(pages.router)
+app.include_router(knowledge_export.router)

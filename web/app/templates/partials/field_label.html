@@ -1,0 +1,5 @@
+{% macro field_label(text, tip) %}
+<span class="field-label">{{ text }}
+  <span class="info-tip" tabindex="0" role="note" aria-label="{{ tip }}" data-tip="{{ tip }}">i</span>
+</span>
+{% endmacro %}

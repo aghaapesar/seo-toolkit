@@ -34,6 +34,13 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 ### Content calendar assignee (v4.4.0)
 - **تقویم محتوا** Kanban cards: assign each article to a project member (chip + dropdown)
 
+### Knowledge Exporter (v4.6.0) — per-URL RAG + LLM + registry
+- **One `.md` per URL**: `pages/{page_type}/{slug}.md` with RAG frontmatter
+- **LLM cleanup** (GapGPT): product vs blog templates; model test before export
+- **SQLite registry**: staleness (sitemap lastmod + content hash), skip unchanged, download tracking
+- Filters: blog/noindex off by default; product sample limit for testing; optional `knowledge_part_*.md`
+- ZIP download for selected files; staleness report after analyze
+
 ### Knowledge Exporter (v4.1.3) — URL pattern + live sampling
 - Segments by **URL pattern** (`/product/*`, `/blog/*`); samples pages to detect content type
 

@@ -33,13 +33,25 @@ def _dedupe_urls(urls: List[str]) -> List[str]:
     return unique
 
 
+def _dedupe_sources(sources: List[str]) -> List[str]:
+    """Return unique sitemap source URLs preserving first-seen order."""
+    seen: set = set()
+    unique: List[str] = []
+    for src in sources:
+        if src and src not in seen:
+            seen.add(src)
+            unique.append(src)
+    return unique
+
+
 def collect_urls_from_bytes(
     content: bytes,
     manager: SitemapManager,
     fetch_remote_children: bool = True,
     max_retries: int = 5,
     timeout: int = 45,
-) -> Tuple[List[str], Optional[str]]:
+    source_url: str = "",
+) -> Tuple[List[str], Optional[str], List[str]]:
     """
     Parse sitemap XML bytes and optionally fetch sub-sitemaps over HTTP.
 
@@ -47,22 +59,27 @@ def collect_urls_from_bytes(
         content: Raw sitemap XML.
         manager: SitemapManager for parsing.
         fetch_remote_children: When True, download sub-sitemaps from index.
+        source_url: URL of this sitemap file (for source tracking).
 
     Output:
-        Tuple of (page URLs, error message).
+        Tuple of (page URLs, error message, fetched sitemap XML URLs).
     """
+    sources: List[str] = []
+    if source_url:
+        sources.append(source_url)
+
     urls, sub_sitemaps = manager._parse_sitemap_content(content)
 
     if not sub_sitemaps:
         if urls:
-            return _dedupe_urls(urls), None
-        return [], "No URLs found in sitemap XML"
+            return _dedupe_urls(urls), None, _dedupe_sources(sources)
+        return [], "No URLs found in sitemap XML", _dedupe_sources(sources)
 
     if not fetch_remote_children:
         return [], (
             f"Uploaded file is a sitemap index ({len(sub_sitemaps)} sub-sitemaps). "
             "Enable download or upload a leaf sitemap file."
-        )
+        ), _dedupe_sources(sources)
 
     all_urls: List[str] = []
     failed_subs: List[str] = []
@@ -78,18 +95,21 @@ def collect_urls_from_bytes(
 
         sub_urls, nested = manager._parse_sitemap_content(sub_content)
         if nested:
-            nested_urls, nested_error = collect_urls_from_bytes(
+            nested_urls, nested_error, nested_sources = collect_urls_from_bytes(
                 sub_content,
                 manager,
                 fetch_remote_children=True,
                 max_retries=max_retries,
                 timeout=timeout,
+                source_url=sub_url,
             )
+            sources.extend(nested_sources)
             if nested_error and not nested_urls:
                 failed_subs.append(sub_url)
             else:
                 all_urls.extend(nested_urls)
         else:
+            sources.append(sub_url)
             all_urls.extend(sub_urls)
 
     if not all_urls:
@@ -98,17 +118,17 @@ def collect_urls_from_bytes(
             return [], (
                 f"Sitemap index found but could not download sub-sitemaps "
                 f"({len(failed_subs)}/{len(sub_sitemaps)}). {detail}"
-            )
-        return [], "No URLs found in sitemap index"
+            ), _dedupe_sources(sources)
+        return [], "No URLs found in sitemap index", _dedupe_sources(sources)
 
-    return _dedupe_urls(all_urls), None
+    return _dedupe_urls(all_urls), None, _dedupe_sources(sources)
 
 
 def fetch_all_sitemap_urls(
     sitemap_url: str,
     max_retries: int = 5,
     timeout: int = 45,
-) -> Tuple[List[str], Optional[str]]:
+) -> Tuple[List[str], Optional[str], List[str]]:
     """
     Download sitemap and return all URLs without CLI prompts.
 
@@ -118,17 +138,17 @@ def fetch_all_sitemap_urls(
         timeout: HTTP timeout in seconds.
 
     Output:
-        Tuple of (url list, error message). error is None on success.
+        Tuple of (url list, error message, sitemap XML source URLs). error is None on success.
     """
     url = normalize_sitemap_url(sitemap_url)
     if not url:
-        return [], "Sitemap URL is required"
+        return [], "Sitemap URL is required", []
 
     content, fetch_error = fetch_url(url, timeout=timeout, max_retries=max_retries)
     manager = SitemapManager()
     if not content:
         detail = fetch_error or manager.last_download_error or "Failed to download sitemap"
-        return [], f"Failed to download sitemap: {detail}"
+        return [], f"Failed to download sitemap: {detail}", []
 
     return collect_urls_from_bytes(
         content,
@@ -136,6 +156,7 @@ def fetch_all_sitemap_urls(
         fetch_remote_children=True,
         max_retries=max_retries,
         timeout=timeout,
+        source_url=url,
     )
 
 
@@ -143,15 +164,17 @@ def parse_uploaded_sitemap_file(
     content: bytes,
     max_retries: int = 5,
     timeout: int = 45,
-) -> Tuple[List[str], Optional[str]]:
+    source_url: str = "",
+) -> Tuple[List[str], Optional[str], List[str]]:
     """
     Parse user-uploaded sitemap.xml (from browser Save As).
 
     Input:
         content: Uploaded file bytes.
+        source_url: Optional label for the uploaded file in source tracking.
 
     Output:
-        Tuple of (page URLs, error message).
+        Tuple of (page URLs, error message, sitemap XML source URLs).
     """
     manager = SitemapManager()
     return collect_urls_from_bytes(
@@ -160,4 +183,5 @@ def parse_uploaded_sitemap_file(
         fetch_remote_children=True,
         max_retries=max_retries,
         timeout=timeout,
+        source_url=source_url or "uploaded:sitemap.xml",
     )

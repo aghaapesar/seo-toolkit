@@ -672,9 +672,9 @@ function initIndexDiffForm(lang, importLabels = {}) {
     if (!res.ok) throw new Error(formatApiError(data, res.statusText));
 
     showResult("result-index-import", renderImportResult(data, lg, importLabels));
-    const markSubmitted = asFormBool(data.mark_submitted);
+    const responseSubmitted = asFormBool(data.mark_submitted);
     toast(
-      `${t(lg, "success")}: ${markSubmitted ? Number(data.added ?? 0) : Number(data.parsed ?? 0)}`,
+      `${t(lg, "success")}: ${responseSubmitted ? Number(data.added ?? 0) : Number(data.parsed ?? 0)}`,
       "success"
     );
     await refreshIndexDiffStatus(domainInput.value, main?.project_slug?.value || getActiveProjectSlug(), importLabels, lg);
@@ -842,14 +842,28 @@ function toggleTheme() {
   initTheme();
 }
 
+function initTopbar() {
+  const projectSelect = document.getElementById("global-project-select");
+  if (projectSelect) {
+    projectSelect.addEventListener("change", () => {
+      setActiveProject(projectSelect.value);
+    });
+  }
+  document.getElementById("btn-theme-toggle")?.addEventListener("click", toggleTheme);
+}
+
+// Expose for legacy inline handlers in tool templates.
+window.setActiveProject = setActiveProject;
+window.toggleTheme = toggleTheme;
+
 // Sticky project + language links on load
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   initSidebarCollapse();
   initNavSearch();
   initNavGroups();
+  initTopbar();
   syncProjectSelects();
-  document.getElementById("btn-theme-toggle")?.addEventListener("click", toggleTheme);
 });
 
 // Persist language preference

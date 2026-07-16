@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.6.0 (2026-07-16)
+
+### Knowledge Export — RAG per-URL export (Phase 1)
+- **Per-URL Markdown**: `pages/{page_type}/{slug}.md` with RAG frontmatter (`url`, `title`, `page_type`, `lang`, `crawled_at`, `sitemap_lastmod`, `content_hash`, `source`)
+- **LLM structuring** via GapGPT (product vs blog templates); model picker + connection test before export
+- **SQLite registry** (`knowledge_export_pages`) for export state, staleness, and first-download tracking
+- **Filters**: exclude blog/noindex by default; optional product sample limit for testing
+- **Incremental export**: skip unchanged pages when lastmod + content hash match registry
+- **Downloads**: single file, multi-select ZIP with folder structure; legacy `knowledge_part_*.md` optional
+- **Staleness report** after sitemap analyze (new / stale / unchanged counts)
+- Register `knowledge_export` router in web app
+
+## v4.5.2 (2026-07-07)
+
+### Fix — header controls (project, theme)
+- Fixed JavaScript syntax error in `app.js` that blocked the entire script from loading
+- Project switcher and theme toggle wired via `initTopbar()` (no broken inline handlers)
+
+## v4.5.1 (2026-07-07)
+
+### Fix — 500 SessionMiddleware
+- Register `SessionMiddleware` and `auth` router so login/session and protected pages work
+
 ## v4.5.0 (2026-07-07)
 
 ### Panel UX redesign — navigation, accessibility, live dashboard
