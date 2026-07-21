@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
+{% from "partials/field_label.html" import field_label %}
+{% block subheading %}{{ strings.content_audit_desc }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <div class="panel-badge g-amber">Mode 8</div>
+    <h2>{% if lang == 'fa' %}تطبیق تقویم محتوا{% else %}Calendar Sync{% endif %}</h2>
+    <p class="muted" style="margin-bottom: 1rem;">{{ strings.content_audit_desc }}</p>
+    <p class="muted" style="margin-bottom: 1.25rem;">
+      <a href="/tools/content-cluster/calendar?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}" class="btn btn-ghost btn-sm">{{ strings.nav_calendar }}</a>
+    </p>
+
+    <form id="form-content-audit" class="stack-form">
+      {% if projects %}
+      {{ project_select(lang, strings, projects, active_project) }}
+      {% endif %}
+      <label>
+        {{ field_label(strings.sitemap_url, strings.tip_content_audit_sitemap) }}
+        <input type="url" name="sitemap_url" id="audit-sitemap-url" placeholder="https://example.com/sitemap.xml" />
+        <p class="muted field-hint">{{ strings.content_audit_sitemap_hint }}</p>
+      </label>
+      <label id="audit-campaign-wrap" class="{% if not active_project_slug %}hidden{% endif %}">
+        {{ field_label(strings.content_cluster_campaign, strings.tip_content_audit_campaign) }}
+        <select name="campaign_id" id="audit-campaign-select">
+          <option value="">{{ strings.content_audit_all_campaigns }}</option>
+        </select>
+      </label>
+      <label>
+        {{ field_label(strings.content_audit_max_pages, strings.tip_content_audit_max_pages) }}
+        <input type="number" name="max_pages" min="10" max="500" value="200" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg">{{ strings.submit }}</button>
+    </form>
+    <div id="result-content-audit" class="result-panel hidden"></div>
+  </section>
+
+  <aside class="panel panel-info panel-info-stack">
+    <h3 class="panel-info-title">{% if lang == 'fa' %}چطور کار می‌کند؟{% else %}How it works{% endif %}</h3>
+    <ol class="steps">
+      <li>{% if lang == 'fa' %}سایت‌مپ را fetch می‌کند (همان موتور Index Diff / Scraping){% else %}Fetches sitemap (same engine as Index Diff / Scraping){% endif %}</li>
+      <li>{% if lang == 'fa' %}title، meta و H1 هر صفحه را اسکرپ می‌کند{% else %}Scrapes title, meta, H1 per page{% endif %}</li>
+      <li>{% if lang == 'fa' %}با کارت‌های تقویم کمپین match می‌کند{% else %}Matches calendar campaign cards{% endif %}</li>
+      <li>{% if lang == 'fa' %}پیشنهاد آپدیت همان کارت را می‌دهد{% else %}Suggests updating the same card{% endif %}</li>
+    </ol>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  initContentAuditForm("{{ lang }}");
+</script>
+{% endblock %}

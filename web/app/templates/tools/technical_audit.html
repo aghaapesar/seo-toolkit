@@ -5,8 +5,8 @@
 {% block content %}
 <div class="tool-layout">
   <section class="panel panel-form">
-    <div class="panel-badge g-cyan">Audit</div>
-    <h2>{% if lang == 'fa' %}ممیزی سئو تکنیکال{% else %}Technical SEO Audit{% endif %}</h2>
+    <div class="panel-badge g-cyan">Check</div>
+    <h2>{% if lang == 'fa' %}بررسی مشکلات فنی{% else %}Technical Issues Check{% endif %}</h2>
     <p class="muted" style="margin-bottom: 1.25rem;">{{ strings.technical_audit_desc }}</p>
 
     <form id="form-technical-audit" class="stack-form">
@@ -41,7 +41,7 @@
           <label>
             {{ field_label(strings.technical_audit_report_title, strings.tip_technical_audit_report_title) }}
             <input type="text" name="report_title" id="ta-report-title" maxlength="120"
-                   value="گزارش ممیزی سئو تکنیکال" />
+                   value="گزارش بررسی مشکلات فنی" />
           </label>
           <label>
             {{ field_label(strings.technical_audit_client_name, strings.tip_technical_audit_client_name) }}
@@ -66,7 +66,7 @@
           <label>
             {{ field_label(strings.technical_audit_header_title, strings.tip_technical_audit_header_title) }}
             <input type="text" name="header_title" id="ta-header-title" maxlength="120"
-                   value="گزارش ممیزی سئو تکنیکال" />
+                   value="گزارش بررسی مشکلات فنی" />
           </label>
           <label>
             {{ field_label(strings.technical_audit_header_subtitle, strings.tip_technical_audit_header_subtitle) }}

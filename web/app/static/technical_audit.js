@@ -1,5 +1,5 @@
 /**
- * Technical SEO Audit page.
+ * Technical Issues Check page.
  *
  * Input:  form (project, site URL, sample size).
  * Output: background job start + previous PDF/JSON report list.

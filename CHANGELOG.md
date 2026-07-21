@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.12.0 (2026-07-21)
+
+### Naming, categories & access refactor
+- Renamed **ممیزی سئو تکنیکال** → **بررسی مشکلات فنی** / Technical Issues Check (UI, PDF defaults, CTAs, progress copy)
+- Cleared name collisions: Content Audit → **تطبیق تقویم محتوا** / Calendar Sync; SEO Scraping → **استخراج متادیتا** / Metadata Export; Link Inserter vs Internal Link Hub
+- New `web/app/tool_registry.py`: single `LOGIN_REQUIRED_TOOLS` + `JOB_TYPE_TO_TOOL` (content-audit, site-index, content-cluster now login-gated on the page like their APIs)
+- Sidebar group label **ایندکس و بررسی فنی**; TOOLS order places technical check next to site-index
+- Descriptions clarify non-overlapping roles (Excel field export vs full technical PDF vs calendar sync vs link hub)
+
 ## v4.11.0 (2026-07-21)
 
 ### Technical SEO Audit — use project sitemap (path-scoped)

@@ -1,15 +1,16 @@
-# Seo Toolkit v4.11.0
+# Seo Toolkit v4.12.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
-2. **SEO Data Collection**: Scrape and audit page titles, meta descriptions, and SEO tags
-3. **AI Content Generation**: Generate SEO-optimized content with multi-model AI support
-4. **Internal Linking**: Smart internal linking with semantic analysis
-5. **Knowledge Base**: Track content history and avoid duplicates
-6. **URL Index Diff**: Separate new sitemap URLs from already-submitted indexing URLs
-7. **Content Cluster & Calendar**: SEOSignal Excel → keyword clusters + publish calendar (hybrid AI)
-8. **Web Dashboard**: FastAPI UI for all modes (EN/FA)
-9. **Multi-Project**: Run 3+ sites with isolated `input/`, `output/`, and index history
+2. **Metadata Export**: Export titles, meta descriptions, and H1 tags from the sitemap to Excel
+3. **Technical Issues Check**: Full technical SEO scan with prioritized Persian PDF for client & tech team
+4. **AI Content Generation**: Generate SEO-optimized content with multi-model AI support
+5. **Internal Linking**: HTML link inserter + link-graph hub with AI suggestions
+6. **Knowledge Base**: RAG Markdown export for chatbot knowledge bases
+7. **URL Index Diff**: Separate new sitemap URLs from already-submitted indexing URLs
+8. **Content Cluster & Calendar**: SEOSignal Excel → keyword clusters + publish calendar (hybrid AI)
+9. **Web Dashboard**: FastAPI UI for all modes (EN/FA)
+10. **Multi-Project**: Run 3+ sites with isolated `input/`, `output/`, and index history
 
 Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/seo-toolkit)
 
@@ -20,6 +21,12 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
+
+### Naming & access refactor (v4.12.0)
+- Renamed **ممیزی سئو تکنیکال** → **بررسی مشکلات فنی** (Technical Issues Check); PDF defaults and CTAs updated
+- Renamed overlapping labels: Content Audit → **تطبیق تقویم محتوا**, SEO Scraping → **استخراج متادیتا**, linking tools clarified (درج لینک vs هاب لینک)
+- Central `web/app/tool_registry.py` for login-required tools + job→tool map; page gates aligned with APIs
+- Sidebar group **ایندکس و بررسی فنی**; tool order: site-index then technical issues check
 
 ### Panel UX redesign (v4.5.0)
 - Grouped sidebar navigation + tool search
@@ -34,8 +41,8 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 ### Content calendar assignee (v4.4.0)
 - **تقویم محتوا** Kanban cards: assign each article to a project member (chip + dropdown)
 
-### Technical SEO Audit — Persian PDF (v4.8.0 – v4.11.0)
-- New tool **ممیزی سئو تکنیکال** at `/tools/technical-audit`
+### Technical Issues Check — Persian PDF (v4.8.0 – v4.12.0)
+- New tool **بررسی مشکلات فنی** at `/tools/technical-audit`
 - 27 technical checks: HTTPS/www redirects, robots.txt, sitemap, soft-404, title/meta/H1/canonical/noindex, image alt, viewport, schema, Open Graph, mixed content, speed, HTML size, URL structure, broken internal links
 - **Full sitemap crawl** (up to 5000 pages) or manual sample size
 - Uses the **project’s configured sitemap** (including subfolder indexes like `/blog/sitemap_index.xml`), not always domain-root `/sitemap.xml`
@@ -148,7 +155,7 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 
 ## What's New in v3.3.0
 
-### Content Audit — sitemap + scrape + calendar sync
+### Calendar Sync — sitemap + scrape + calendar sync
 - Match live site pages to content calendar cards
 - Suggest updating the same card when SEO fields differ
 - Apply from task results page
@@ -1123,7 +1130,7 @@ python3 main.py --mode scraping
 
 ## 📊 Example Workflows
 
-### Workflow 1: Monthly Content Audit
+### Workflow 1: Monthly Calendar Sync
 ```bash
 # 1. Export fresh Search Console data
 # 2. Run analysis

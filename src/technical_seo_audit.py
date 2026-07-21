@@ -1076,5 +1076,5 @@ class TechnicalSeoAuditor:
                 STACK_LABELS_FA.get(s, s) for s in self.detected_stacks
             ],
         }
-        report(95, "ممیزی کامل شد")
+        report(95, "بررسی کامل شد")
         return result

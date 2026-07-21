@@ -161,7 +161,7 @@ async def start_audit(
             "link_check_limit": max(0, min(link_check_limit, 200)),
             "branding": branding,
         },
-        message="در صف — شروع ممیزی…",
+        message="در صف — شروع بررسی…",
     )
     job.set_progress(2, "در صف…", step="queued")
     job_manager.enqueue(job.id, _run_audit_job)

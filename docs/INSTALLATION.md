@@ -72,9 +72,9 @@ Open http://127.0.0.1:8000 — use **Projects** in the sidebar to create sites a
 12. Check **needs procurement** list sorted by priority (search volume + competition).
 13. Semantic matching groups variants like «جالیز» and «خرید بازی فکری جالیز» under the same product.
 
-### Technical SEO Audit — Persian PDF (v4.8.0 – v4.11.0)
+### Technical Issues Check — Persian PDF (v4.8.0 – v4.12.0)
 
-1. Open **ممیزی سئو تکنیکال / Technical SEO Audit** in the sidebar (login required).
+1. Open **بررسی مشکلات فنی / Technical Issues Check** in the sidebar (login required).
 2. Select a project — **آدرس سایت‌مپ پروژه** is pre-filled from the project (e.g. `/blog/sitemap_index.xml`); the crawl stays in that folder scope.
 3. Choose sample size (10–5000 pages) **or check «کرال کامل همه صفحات سایت‌مپ»** to audit every URL from that sitemap.
 4. Expand **تنظیمات جلد و هدر گزارش PDF** to edit cover title, prepared-by, agency, page headers, and section headings.

@@ -57,12 +57,12 @@ class ReportBranding:
     only the fields they care about.
     """
 
-    report_title: str = "گزارش ممیزی سئو تکنیکال"
+    report_title: str = "گزارش بررسی مشکلات فنی"
     client_name: str = ""
     prepared_by: str = ""
     company_name: str = ""
     cover_footer: str = "تهیه‌شده با Seo Toolkit"
-    header_title: str = "گزارش ممیزی سئو تکنیکال"
+    header_title: str = "گزارش بررسی مشکلات فنی"
     header_subtitle: str = ""  # empty → site URL
     section_summary: str = "خلاصه مدیریتی"
     section_issues: str = "جزئیات مشکلات"
@@ -77,12 +77,12 @@ class ReportBranding:
             site_url: Fallback for header_subtitle when empty.
         """
         return ReportBranding(
-            report_title=(self.report_title or "").strip() or "گزارش ممیزی سئو تکنیکال",
+            report_title=(self.report_title or "").strip() or "گزارش بررسی مشکلات فنی",
             client_name=(self.client_name or "").strip() or (project_name or "").strip(),
             prepared_by=(self.prepared_by or "").strip(),
             company_name=(self.company_name or "").strip(),
             cover_footer=(self.cover_footer or "").strip() or "تهیه‌شده با Seo Toolkit",
-            header_title=(self.header_title or "").strip() or "گزارش ممیزی سئو تکنیکال",
+            header_title=(self.header_title or "").strip() or "گزارش بررسی مشکلات فنی",
             header_subtitle=(self.header_subtitle or "").strip() or (site_url or "").strip(),
             section_summary=(self.section_summary or "").strip() or "خلاصه مدیریتی",
             section_issues=(self.section_issues or "").strip() or "جزئیات مشکلات",
@@ -329,7 +329,7 @@ def _summary_page(pdf: SeoAuditPdf, result: Dict[str, Any], branding: ReportBran
         else "وضعیت فنی سایت ضعیف است و رفع مشکلات بحرانی فوریت دارد."
     )
     pdf.paragraph(
-        f"در این ممیزی {_to_persian_digits(result.get('pages_checked', 0))} صفحه از سایت "
+        f"در این بررسی {_to_persian_digits(result.get('pages_checked', 0))} صفحه از سایت "
         f"{result.get('site_url', '')} بررسی شد و در مجموع {_to_persian_digits(total_issues)} "
         f"دسته مشکل شناسایی گردید. امتیاز سلامت فنی سایت {_to_persian_digits(score)} از ۱۰۰ است. "
         + verdict
@@ -561,7 +561,7 @@ def _task_plan_page(
 
     pdf.ln(6)
     pdf.paragraph(
-        "پیشنهاد می‌شود پس از رفع موارد بحرانی و زیاد، ممیزی مجدد انجام شود تا روند بهبود امتیاز ثبت گردد.",
+        "پیشنهاد می‌شود پس از رفع موارد بحرانی و زیاد، بررسی مجدد انجام شود تا روند بهبود امتیاز ثبت گردد.",
         size=9,
         color=C_MUTED,
     )

@@ -10,39 +10,30 @@ from web.app.deps.auth import get_optional_user
 from web.app.i18n import get_lang, page_context, t
 from web.app.services.calendar_store import get_board, get_board_by_job
 from web.app.services.job_manager import job_manager
+from web.app.tool_registry import JOB_TYPE_TO_TOOL, tool_requires_login
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 router = APIRouter(tags=["pages"])
 
+# Display titles: (template, title_en, title_fa) — keep in sync with TOOLS in i18n.py
 TOOL_PAGES = {
     "content": ("tools/content.html", "Content Analysis", "تحلیل محتوا"),
-    "scraping": ("tools/scraping.html", "SEO Scraping", "اسکرپ سئو"),
+    "scraping": ("tools/scraping.html", "Metadata Export", "استخراج متادیتا"),
     "generation": ("tools/generation.html", "Content Generation", "تولید محتوا"),
-    "linking": ("tools/linking.html", "Internal Linking", "لینک‌سازی داخلی"),
+    "linking": ("tools/linking.html", "Link Inserter", "درج لینک در محتوا"),
     "synonyms": ("tools/synonyms.html", "Synonym Finder", "مترادف‌یاب"),
     "index-diff": ("tools/index_diff.html", "URL Index Diff", "تفکیک ایندکس"),
     "content-cluster": ("tools/content_cluster.html", "Content Cluster", "کلاستر محتوا"),
-    "content-audit": ("tools/content_audit.html", "Content Audit", "ممیزی محتوا"),
+    "content-audit": ("tools/content_audit.html", "Calendar Sync", "تطبیق تقویم محتوا"),
     "site-index": ("tools/site_index.html", "Site Index", "ایندکس سایت"),
     "product-gap": ("tools/product_gap.html", "Product Gap", "شکاف محصولات"),
-    "internal-links": ("tools/internal_links.html", "Internal Links", "لینک داخلی"),
-    "knowledge-export": ("tools/knowledge_export.html", "Knowledge Export", "خروجی Knowledge Base"),
+    "internal-links": ("tools/internal_links.html", "Internal Link Hub", "هاب لینک داخلی"),
+    "knowledge-export": ("tools/knowledge_export.html", "Knowledge Base Export", "خروجی Knowledge Base"),
     "project-tasks": ("tools/project_tasks.html", "Project Tasks", "یادداشت تسک‌ها"),
     "service-status": ("tools/service_status.html", "Service Status", "وضعیت سرویس‌ها"),
-    "technical-audit": ("tools/technical_audit.html", "Technical SEO Audit", "ممیزی سئو تکنیکال"),
-}
-
-# Map background job types to tool page slugs for task progress back-links.
-JOB_TYPE_TO_TOOL: dict[str, str] = {
-    "index_diff": "index-diff",
-    "content_cluster": "content-cluster",
-    "content_audit": "content-audit",
-    "site_index": "site-index",
-    "product_gap": "product-gap",
-    "knowledge_export": "knowledge-export",
-    "technical_audit": "technical-audit",
+    "technical-audit": ("tools/technical_audit.html", "Technical Issues Check", "بررسی مشکلات فنی"),
 }
 
 
@@ -112,15 +103,8 @@ def tool_page(request: Request, tool_id: str):
         )
     lang = request.query_params.get("lang") or request.cookies.get("lang", "fa")
 
-    # Product gap, internal links, knowledge export, and service status need login.
-    if tool_id in (
-        "product-gap",
-        "internal-links",
-        "knowledge-export",
-        "project-tasks",
-        "service-status",
-        "technical-audit",
-    ):
+    # Single source of truth: web.app.tool_registry.LOGIN_REQUIRED_TOOLS
+    if tool_requires_login(tool_id):
         user = get_optional_user(request)
         if not user:
             next_path = request.url.path

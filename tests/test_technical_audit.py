@@ -235,7 +235,7 @@ class TestPdf:
         brand = ReportBranding(report_title="", client_name="").resolved(
             project_name="فروشگاه الف", site_url="https://a.example"
         )
-        assert brand.report_title == "گزارش ممیزی سئو تکنیکال"
+        assert brand.report_title == "گزارش بررسی مشکلات فنی"
         assert brand.client_name == "فروشگاه الف"
         assert brand.header_subtitle == "https://a.example"
         assert brand.section_summary == "خلاصه مدیریتی"
@@ -259,7 +259,7 @@ class TestPdf:
             client_name="کارفرمای نمونه",
             prepared_by="تیم سئو آلفا",
             company_name="آژانس آلفا",
-            header_title="ممیزی تکنیکال — آلفا",
+            header_title="بررسی مشکلات فنی — آلفا",
             section_summary="خلاصه برای کارفرما",
             section_issues="فهرست ایرادات",
             section_tasks="چک‌لیست اقدام",
