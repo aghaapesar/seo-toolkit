@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.11.0 (2026-07-21)
+
+### Technical SEO Audit — use project sitemap (path-scoped)
+- Crawl base keeps subdirectory from project sitemap/domain (e.g. `https://zitro.ir/blog` from `/blog/sitemap_index.xml`) instead of collapsing to domain root
+- Site-level sitemap check prefers the **project’s configured sitemap URL** before probing `/sitemap.xml`
+- URL sample filtered to the same path scope so pages outside the project sitemap folder are not mixed in
+- New form field **آدرس سایت‌مپ پروژه** pre-filled from the project; optional one-off override supported
+- Result JSON records `sitemap_url`, `base_path`, and `sitemap_url_count` for transparency
+
 ## v4.10.0 (2026-07-21)
 
 ### Technical SEO Audit — editable PDF branding

@@ -124,6 +124,7 @@ function initTechnicalAuditPage(lang) {
     const body = new FormData();
     body.append("project_slug", slug);
     body.append("site_url", form.site_url?.value || "");
+    body.append("sitemap_url", form.sitemap_url?.value || "");
     // 0 = crawl every sitemap URL (server caps at 5000)
     body.append("max_pages", fullCrawl ? "0" : form.max_pages?.value || "100");
 

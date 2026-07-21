@@ -526,11 +526,27 @@ class TechnicalSeoAuditor:
         timeout: int = 20,
         concurrency: int = 6,
         link_check_limit: int = 40,
+        configured_sitemap_url: str = "",
     ) -> None:
-        parsed = urlparse(site_url if "://" in site_url else f"https://{site_url}")
+        """
+        Input:
+            site_url: Crawl base (may include path, e.g. https://ex.com/blog).
+            urls: Page URLs from the project sitemap.
+            configured_sitemap_url: Project sitemap used for crawl + site checks.
+        """
+        raw = site_url if "://" in site_url else f"https://{site_url}"
+        parsed = urlparse(raw)
         self.scheme = parsed.scheme or "https"
         self.host = parsed.netloc
-        self.site_url = f"{self.scheme}://{self.host}"
+        # Keep subdirectory scope (e.g. /blog) — do not strip to domain root
+        self.base_path = (parsed.path or "").rstrip("/")
+        self.site_url = (
+            f"{self.scheme}://{self.host}{self.base_path}"
+            if self.base_path
+            else f"{self.scheme}://{self.host}"
+        )
+        self.homepage = self.site_url if self.site_url.endswith("/") else self.site_url + "/"
+        self.configured_sitemap_url = (configured_sitemap_url or "").strip()
         self.urls = list(urls or [])
         # max_pages <= 0 → crawl the whole sitemap (bounded by ABSOLUTE_PAGE_CAP)
         self.max_pages = ABSOLUTE_PAGE_CAP if max_pages <= 0 else min(max_pages, ABSOLUTE_PAGE_CAP)
@@ -550,7 +566,7 @@ class TechnicalSeoAuditor:
         Output:
             Ordered list of stack keys (e.g. ["wordpress", "woocommerce"]).
         """
-        resp = self._head_or_get(self.site_url + "/")
+        resp = self._head_or_get(self.homepage)
         if resp is None:
             return []
         html = (resp.text or "")[:400_000].lower()
@@ -634,36 +650,75 @@ class TechnicalSeoAuditor:
                     )
                 )
 
-        # robots.txt
-        robots = self._head_or_get(f"{self.site_url}/robots.txt")
+        # robots.txt always lives at host root
+        robots = self._head_or_get(f"{self.scheme}://{self.host}/robots.txt")
         robots_ok = robots is not None and robots.status_code == 200 and robots.text.strip()
         if not robots_ok:
-            issues.append(_make_issue("site_robots_txt", 1, [f"{self.site_url}/robots.txt"]))
+            issues.append(
+                _make_issue("site_robots_txt", 1, [f"{self.scheme}://{self.host}/robots.txt"])
+            )
 
-        # sitemap.xml (direct or referenced in robots)
-        sitemap_ok = False
-        sitemap_urls = [f"{self.site_url}/sitemap.xml", f"{self.site_url}/sitemap_index.xml"]
+        # Prefer the project's configured sitemap (e.g. /blog/sitemap_index.xml),
+        # then path-scoped candidates, then domain root — never ignore the project setting.
+        sitemap_urls: List[str] = []
+        if self.configured_sitemap_url:
+            sitemap_urls.append(self.configured_sitemap_url)
+        if self.base_path:
+            sitemap_urls.extend(
+                [
+                    f"{self.scheme}://{self.host}{self.base_path}/sitemap.xml",
+                    f"{self.scheme}://{self.host}{self.base_path}/sitemap_index.xml",
+                ]
+            )
+        sitemap_urls.extend(
+            [
+                f"{self.scheme}://{self.host}/sitemap.xml",
+                f"{self.scheme}://{self.host}/sitemap_index.xml",
+            ]
+        )
         if robots_ok:
             for line in robots.text.splitlines():
                 if line.lower().startswith("sitemap:"):
-                    sitemap_urls.insert(0, line.split(":", 1)[1].strip())
-        for sm in sitemap_urls[:3]:
+                    sm = line.split(":", 1)[1].strip()
+                    if sm and sm not in sitemap_urls:
+                        sitemap_urls.append(sm)
+
+        sitemap_ok = False
+        checked: List[str] = []
+        for sm in sitemap_urls:
+            if sm in checked:
+                continue
+            checked.append(sm)
             resp = self._head_or_get(sm)
             if resp is not None and resp.status_code == 200 and b"<" in resp.content[:200]:
                 sitemap_ok = True
                 break
+            # Cap probes so we don't hammer remote hosts
+            if len(checked) >= 5:
+                break
         if not sitemap_ok:
-            issues.append(_make_issue("site_sitemap", 1, sitemap_urls[:2]))
+            issues.append(
+                _make_issue(
+                    "site_sitemap",
+                    1,
+                    checked[:3]
+                    or [self.configured_sitemap_url or f"{self.scheme}://{self.host}/sitemap.xml"],
+                )
+            )
 
-        # 404 handling
-        probe = self._head_or_get(f"{self.site_url}/seo-toolkit-404-probe-{int(time.time())}")
+        # 404 handling under the scoped site path
+        probe = self._head_or_get(
+            f"{self.site_url.rstrip('/')}/seo-toolkit-404-probe-{int(time.time())}"
+        )
         if probe is not None and probe.status_code == 200:
             issues.append(_make_issue("site_404_handling", 1, [probe.url]))
 
-        # favicon
-        fav = self._head_or_get(f"{self.site_url}/favicon.ico")
+        # favicon at host root
+        fav = self._head_or_get(f"{self.scheme}://{self.host}/favicon.ico")
         if fav is None or fav.status_code != 200:
-            issues.append(_make_issue("site_favicon", 1, [f"{self.site_url}/favicon.ico"]))
+            issues.append(
+                _make_issue("site_favicon", 1, [f"{self.scheme}://{self.host}/favicon.ico"])
+            )
 
         return issues
 
@@ -937,8 +992,8 @@ class TechnicalSeoAuditor:
         report(5, "بررسی‌های سطح سایت (robots، sitemap، HTTPS)…")
         site_issues = self.check_site_level()
 
-        # Build page sample: homepage first
-        sample: List[str] = [self.site_url + "/"]
+        # Build page sample: scoped homepage first
+        sample: List[str] = [self.homepage]
         for u in self.urls:
             if u not in sample:
                 sample.append(u)
@@ -1003,6 +1058,9 @@ class TechnicalSeoAuditor:
 
         result = {
             "site_url": self.site_url,
+            "homepage": self.homepage,
+            "sitemap_url": self.configured_sitemap_url,
+            "base_path": self.base_path,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "pages_checked": len(sample),
             "pages_ok": len(ok_pages),

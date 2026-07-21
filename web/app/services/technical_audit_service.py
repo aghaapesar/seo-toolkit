@@ -2,7 +2,7 @@
 Technical SEO audit web service — project-scoped audit + PDF report.
 
 Input:
-    project_slug or direct site URL, sample size options.
+    project_slug or direct site URL, project sitemap (path-scoped OK), sample size.
 
 Output:
     Audit result dict + generated PDF/JSON files with download links.
@@ -15,7 +15,7 @@ import logging
 import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from src.services.project_manager import ProjectManager
@@ -43,6 +43,114 @@ def _download_entry(label: str, path: Path) -> Dict[str, str]:
     }
 
 
+def _normalize_http_url(raw: str) -> str:
+    """Ensure http(s) scheme; trim trailing slash (except bare origin)."""
+    url = (raw or "").strip()
+    if not url:
+        return ""
+    if "://" not in url:
+        url = f"https://{url.lstrip('/')}"
+    parsed = urlparse(url)
+    path = (parsed.path or "").rstrip("/")
+    if path:
+        return f"{parsed.scheme}://{parsed.netloc}{path}"
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def site_base_from_sitemap(sitemap_url: str) -> str:
+    """
+    Derive crawl base from a sitemap URL, keeping folder prefix.
+
+    Input:
+        sitemap_url: e.g. https://zitro.ir/blog/sitemap_index.xml
+
+    Output:
+        e.g. https://zitro.ir/blog  (not bare https://zitro.ir)
+    """
+    parsed = urlparse(_normalize_http_url(sitemap_url))
+    if not parsed.netloc:
+        return ""
+    path = parsed.path or ""
+    # Drop the sitemap filename (sitemap.xml, sitemap_index.xml, …)
+    if "/" in path:
+        last = path.rsplit("/", 1)[-1].lower()
+        if last.endswith(".xml") or "sitemap" in last:
+            path = path.rsplit("/", 1)[0]
+    path = path.rstrip("/")
+    if path:
+        return f"{parsed.scheme}://{parsed.netloc}{path}"
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def url_in_site_scope(url: str, site_base: str) -> bool:
+    """
+    True when URL shares host and (if set) path prefix with site_base.
+
+    Input:
+        url: Candidate page URL from sitemap.
+        site_base: Crawl scope (https://ex.com/blog).
+    """
+    base = urlparse(_normalize_http_url(site_base))
+    candidate = urlparse(url)
+    if not base.netloc or candidate.netloc != base.netloc:
+        return False
+    prefix = (base.path or "").rstrip("/")
+    if not prefix:
+        return True
+    path = candidate.path or "/"
+    return path == prefix or path.startswith(prefix + "/")
+
+
+def resolve_audit_targets(
+    project,
+    *,
+    site_url: str = "",
+    sitemap_url: str = "",
+) -> Tuple[str, str]:
+    """
+    Resolve crawl base + sitemap from form overrides and project settings.
+
+    Priority for sitemap: form override → project.sitemap_url
+    Priority for site: form override → project.domain (if URL/path) → folder of sitemap
+
+    Output:
+        (resolved_site_base, resolved_sitemap_url)
+    """
+    sm = _normalize_http_url(sitemap_url) or _normalize_http_url(project.sitemap_url or "")
+    site = _normalize_http_url(site_url)
+
+    if not site:
+        domain = (project.domain or "").strip()
+        if domain:
+            if "://" not in domain:
+                # Plain domain → origin only
+                if "/" not in domain:
+                    site = f"https://{domain}"
+                else:
+                    site = _normalize_http_url(domain)
+            else:
+                site = _normalize_http_url(domain)
+            # If domain is bare host and sitemap has a folder, prefer sitemap folder
+            d_path = urlparse(site).path
+            if (not d_path or d_path == "/") and sm:
+                from_sm = site_base_from_sitemap(sm)
+                if urlparse(from_sm).path:
+                    site = from_sm
+        elif sm:
+            site = site_base_from_sitemap(sm)
+
+    if not site and not sm:
+        raise ValueError("Site URL or project sitemap is required")
+    if not site and sm:
+        site = site_base_from_sitemap(sm)
+    if not sm and site:
+        # Fall back to common root sitemap under the resolved host
+        p = urlparse(site)
+        sm = f"{p.scheme}://{p.netloc}/sitemap.xml"
+
+    return site, sm
+
+
 def list_audit_reports(project_slug: str) -> List[Dict[str, Any]]:
     """
     List previous audit reports (newest first).
@@ -61,6 +169,7 @@ def list_audit_reports(project_slug: str) -> List[Dict[str, Any]]:
             entry.update(
                 {
                     "site_url": data.get("site_url", ""),
+                    "sitemap_url": data.get("sitemap_url", ""),
                     "generated_at": data.get("generated_at", ""),
                     "score": data.get("score"),
                     "pages_checked": data.get("pages_checked"),
@@ -81,6 +190,7 @@ def run_technical_audit(
     project_slug: str,
     *,
     site_url: str = "",
+    sitemap_url: str = "",
     max_pages: int = 100,
     concurrency: int = 6,
     timeout: int = 20,
@@ -93,7 +203,8 @@ def run_technical_audit(
 
     Input:
         project_slug: Project scope (sitemap + output dir).
-        site_url: Optional override; else derived from project sitemap.
+        site_url: Optional crawl base override (may include /blog path).
+        sitemap_url: Optional sitemap override; else project.sitemap_url.
         max_pages: Page sample cap (10..5000); 0 = crawl all sitemap URLs.
         branding: Optional PDF cover/header/section label overrides.
 
@@ -105,28 +216,37 @@ def run_technical_audit(
     if not project:
         raise ValueError(f"Project not found: {project_slug}")
 
-    resolved_site = site_url.strip()
-    sitemap_url = (project.sitemap_url or "").strip()
-    if not resolved_site:
-        if not sitemap_url:
-            raise ValueError("Site URL or project sitemap is required")
-        p = urlparse(sitemap_url)
-        resolved_site = f"{p.scheme or 'https'}://{p.netloc}"
+    resolved_site, resolved_sitemap = resolve_audit_targets(
+        project, site_url=site_url, sitemap_url=sitemap_url
+    )
 
-    # Collect sample URLs from sitemap when available
+    # Collect URLs from the project's configured sitemap (not domain-root guess)
     urls: List[str] = []
-    if sitemap_url:
+    sitemap_error: Optional[str] = None
+    if resolved_sitemap:
         if on_progress:
-            on_progress(3, "دریافت sitemap…")
+            on_progress(3, f"دریافت sitemap پروژه: {resolved_sitemap}")
         try:
             from web.app.services.sitemap_fetch import fetch_all_sitemap_urls
 
-            raw, error, _src = fetch_all_sitemap_urls(sitemap_url, timeout=timeout)
+            raw, error, _src = fetch_all_sitemap_urls(resolved_sitemap, timeout=timeout)
+            sitemap_error = error
             if not error and raw:
-                host = urlparse(resolved_site).netloc
-                urls = [u for u in raw if urlparse(u).netloc == host]
+                urls = [u for u in raw if url_in_site_scope(u, resolved_site)]
+                if not urls and raw:
+                    # Scope was too tight — keep same-host URLs as fallback
+                    host = urlparse(resolved_site).netloc
+                    urls = [u for u in raw if urlparse(u).netloc == host]
+                    logger.warning(
+                        "No URLs under path scope %s; falling back to host filter (%s urls)",
+                        resolved_site,
+                        len(urls),
+                    )
+            elif error:
+                logger.warning("Sitemap fetch error for %s: %s", resolved_sitemap, error)
         except Exception as exc:
-            logger.warning("Sitemap fetch failed, auditing homepage links only: %s", exc)
+            sitemap_error = str(exc)
+            logger.warning("Sitemap fetch failed, auditing homepage only: %s", exc)
 
     # max_pages == 0 → full crawl (auditor caps at ABSOLUTE_PAGE_CAP)
     effective_pages = 0 if max_pages <= 0 else max(10, min(max_pages, 5000))
@@ -137,8 +257,13 @@ def run_technical_audit(
         timeout=max(5, timeout),
         concurrency=max(1, min(concurrency, 12)),
         link_check_limit=max(0, min(link_check_limit, 200)),
+        configured_sitemap_url=resolved_sitemap,
     )
     result = auditor.run(on_progress=on_progress)
+    result["sitemap_url"] = resolved_sitemap
+    result["sitemap_url_count"] = len(urls)
+    if sitemap_error:
+        result["sitemap_fetch_error"] = sitemap_error
 
     report_branding = ReportBranding.from_dict(branding).resolved(
         project_name=project.name or project_slug,

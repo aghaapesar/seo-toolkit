@@ -15,7 +15,15 @@
       {% endif %}
       <label>
         {{ field_label(strings.technical_audit_site_url, strings.tip_technical_audit_site) }}
-        <input type="url" name="site_url" id="ta-site-url" placeholder="https://example.com" />
+        <input type="url" name="site_url" id="ta-site-url" placeholder="https://example.com/blog"
+               value="{% if active_project and active_project.domain %}{% if '://' in active_project.domain %}{{ active_project.domain }}{% endif %}{% endif %}" />
+      </label>
+      <label>
+        {{ field_label(strings.technical_audit_sitemap_url, strings.tip_technical_audit_sitemap) }}
+        <input type="url" name="sitemap_url" id="ta-sitemap-url"
+               placeholder="https://example.com/blog/sitemap_index.xml"
+               value="{{ active_project.sitemap_url if active_project else '' }}" />
+        <p class="muted field-hint">{{ strings.technical_audit_sitemap_hint }}</p>
       </label>
       <label class="checkbox-label">
         <input type="checkbox" id="ta-full-crawl" name="full_crawl" />

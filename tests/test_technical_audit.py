@@ -134,6 +134,18 @@ class TestFullCrawlAndStack:
         a = TechnicalSeoAuditor("https://example.com", [], max_pages=99999)
         assert a.max_pages == ABSOLUTE_PAGE_CAP
 
+    def test_keeps_blog_path_as_site_base(self):
+        a = TechnicalSeoAuditor(
+            "https://zitro.ir/blog",
+            [],
+            max_pages=10,
+            configured_sitemap_url="https://zitro.ir/blog/sitemap_index.xml",
+        )
+        assert a.site_url == "https://zitro.ir/blog"
+        assert a.base_path == "/blog"
+        assert a.homepage == "https://zitro.ir/blog/"
+        assert a.configured_sitemap_url.endswith("sitemap_index.xml")
+
     def test_stack_solution_picked_for_detected_stack(self):
         a = _auditor()
         a.detected_stacks = ["wordpress"]
@@ -149,6 +161,41 @@ class TestFullCrawlAndStack:
     def test_stack_solutions_reference_known_issues(self):
         for issue_id in STACK_SOLUTIONS:
             assert issue_id in ISSUE_CATALOG, f"unknown issue in solutions: {issue_id}"
+
+
+class TestSitemapScope:
+    """Project sitemap path scope (e.g. /blog/sitemap_index.xml)."""
+
+    def test_site_base_from_blog_sitemap(self):
+        from web.app.services.technical_audit_service import site_base_from_sitemap
+
+        assert site_base_from_sitemap("https://zitro.ir/blog/sitemap_index.xml") == (
+            "https://zitro.ir/blog"
+        )
+        assert site_base_from_sitemap("https://example.com/sitemap.xml") == (
+            "https://example.com"
+        )
+
+    def test_url_in_site_scope_filters_path(self):
+        from web.app.services.technical_audit_service import url_in_site_scope
+
+        base = "https://zitro.ir/blog"
+        assert url_in_site_scope("https://zitro.ir/blog/post-1", base)
+        assert not url_in_site_scope("https://zitro.ir/products/x", base)
+        assert not url_in_site_scope("https://other.com/blog/x", base)
+
+    def test_resolve_uses_project_sitemap_not_root(self):
+        from types import SimpleNamespace
+
+        from web.app.services.technical_audit_service import resolve_audit_targets
+
+        project = SimpleNamespace(
+            domain="https://zitro.ir/blog/",
+            sitemap_url="https://zitro.ir/blog/sitemap_index.xml",
+        )
+        site, sm = resolve_audit_targets(project)
+        assert sm == "https://zitro.ir/blog/sitemap_index.xml"
+        assert site == "https://zitro.ir/blog"
 
 
 class TestPdf:
