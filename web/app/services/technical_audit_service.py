@@ -19,7 +19,7 @@ from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 from src.services.project_manager import ProjectManager
-from src.seo_pdf_report import generate_seo_audit_pdf
+from src.seo_pdf_report import ReportBranding, generate_seo_audit_pdf
 from src.technical_seo_audit import TechnicalSeoAuditor
 from web.app.services.file_download import _relative_to_root
 
@@ -85,6 +85,7 @@ def run_technical_audit(
     concurrency: int = 6,
     timeout: int = 20,
     link_check_limit: int = 40,
+    branding: Optional[Dict[str, Any]] = None,
     on_progress: Optional[Callable[[int, str], None]] = None,
 ) -> Dict[str, Any]:
     """
@@ -94,6 +95,7 @@ def run_technical_audit(
         project_slug: Project scope (sitemap + output dir).
         site_url: Optional override; else derived from project sitemap.
         max_pages: Page sample cap (10..5000); 0 = crawl all sitemap URLs.
+        branding: Optional PDF cover/header/section label overrides.
 
     Output:
         Result dict with files list for job.result.
@@ -138,6 +140,12 @@ def run_technical_audit(
     )
     result = auditor.run(on_progress=on_progress)
 
+    report_branding = ReportBranding.from_dict(branding).resolved(
+        project_name=project.name or project_slug,
+        site_url=resolved_site,
+    )
+    result["branding"] = report_branding.to_dict()
+
     # Persist JSON + PDF
     out_dir = audit_output_dir(project_slug)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -153,7 +161,12 @@ def run_technical_audit(
     if on_progress:
         on_progress(96, "ساخت گزارش PDF…")
     pdf_path = base.with_suffix(".pdf")
-    generate_seo_audit_pdf(result, pdf_path, project_name=project.name or project_slug)
+    generate_seo_audit_pdf(
+        result,
+        pdf_path,
+        project_name=project.name or project_slug,
+        branding=report_branding,
+    )
 
     files = [
         _download_entry("گزارش PDF", pdf_path),

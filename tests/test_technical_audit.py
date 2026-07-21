@@ -2,7 +2,12 @@
 
 from pathlib import Path
 
-from src.seo_pdf_report import _fix_zwnj, _to_persian_digits, generate_seo_audit_pdf
+from src.seo_pdf_report import (
+    ReportBranding,
+    _fix_zwnj,
+    _to_persian_digits,
+    generate_seo_audit_pdf,
+)
 from src.technical_seo_audit import (
     ABSOLUTE_PAGE_CAP,
     ISSUE_CATALOG,
@@ -178,3 +183,41 @@ class TestPdf:
         data = out.read_bytes()
         assert data[:5] == b"%PDF-"
         assert len(data) > 10_000
+
+    def test_branding_resolved_defaults(self):
+        brand = ReportBranding(report_title="", client_name="").resolved(
+            project_name="فروشگاه الف", site_url="https://a.example"
+        )
+        assert brand.report_title == "گزارش ممیزی سئو تکنیکال"
+        assert brand.client_name == "فروشگاه الف"
+        assert brand.header_subtitle == "https://a.example"
+        assert brand.section_summary == "خلاصه مدیریتی"
+
+    def test_generate_pdf_with_custom_branding(self, tmp_path: Path):
+        issues = [_make_issue("og_missing", 2, ["https://example.com/x"])]
+        result = {
+            "site_url": "https://example.com",
+            "generated_at": "2026-07-21T12:00:00+00:00",
+            "pages_checked": 5,
+            "pages_ok": 5,
+            "avg_response_time": 0.8,
+            "score": 90,
+            "severity_counts": {"critical": 0, "high": 0, "medium": 0, "low": 1},
+            "issues": [i.to_dict() for i in issues],
+            "tasks": TechnicalSeoAuditor.build_task_plan(issues),
+            "broken_links": 0,
+        }
+        brand = ReportBranding(
+            report_title="گزارش تخصصی سئو",
+            client_name="کارفرمای نمونه",
+            prepared_by="تیم سئو آلفا",
+            company_name="آژانس آلفا",
+            header_title="ممیزی تکنیکال — آلفا",
+            section_summary="خلاصه برای کارفرما",
+            section_issues="فهرست ایرادات",
+            section_tasks="چک‌لیست اقدام",
+        )
+        out = generate_seo_audit_pdf(
+            result, tmp_path / "branded.pdf", branding=brand
+        )
+        assert out.is_file() and out.stat().st_size > 8_000

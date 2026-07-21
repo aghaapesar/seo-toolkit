@@ -2,7 +2,8 @@
 Persian RTL PDF report for technical SEO audits (fpdf2 + Vazirmatn).
 
 Input:
-    Audit result dict from TechnicalSeoAuditor.run().
+    Audit result dict from TechnicalSeoAuditor.run()
+    + optional ReportBranding (cover / headers / section titles).
 
 Output:
     Styled A4 PDF: cover, score, issue tables by severity,
@@ -12,6 +13,7 @@ Output:
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, fields
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -46,6 +48,75 @@ SEVERITY_LABELS = {
 }
 
 
+@dataclass
+class ReportBranding:
+    """
+    Editable cover + header labels for the PDF report.
+
+    Empty strings fall back to Persian defaults so callers can override
+    only the fields they care about.
+    """
+
+    report_title: str = "گزارش ممیزی سئو تکنیکال"
+    client_name: str = ""
+    prepared_by: str = ""
+    company_name: str = ""
+    cover_footer: str = "تهیه‌شده با Seo Toolkit"
+    header_title: str = "گزارش ممیزی سئو تکنیکال"
+    header_subtitle: str = ""  # empty → site URL
+    section_summary: str = "خلاصه مدیریتی"
+    section_issues: str = "جزئیات مشکلات"
+    section_tasks: str = "برنامه اقدام اولویت‌بندی‌شده"
+
+    def resolved(self, *, project_name: str = "", site_url: str = "") -> "ReportBranding":
+        """
+        Fill blanks with sensible defaults.
+
+        Input:
+            project_name: Fallback for client_name when empty.
+            site_url: Fallback for header_subtitle when empty.
+        """
+        return ReportBranding(
+            report_title=(self.report_title or "").strip() or "گزارش ممیزی سئو تکنیکال",
+            client_name=(self.client_name or "").strip() or (project_name or "").strip(),
+            prepared_by=(self.prepared_by or "").strip(),
+            company_name=(self.company_name or "").strip(),
+            cover_footer=(self.cover_footer or "").strip() or "تهیه‌شده با Seo Toolkit",
+            header_title=(self.header_title or "").strip() or "گزارش ممیزی سئو تکنیکال",
+            header_subtitle=(self.header_subtitle or "").strip() or (site_url or "").strip(),
+            section_summary=(self.section_summary or "").strip() or "خلاصه مدیریتی",
+            section_issues=(self.section_issues or "").strip() or "جزئیات مشکلات",
+            section_tasks=(self.section_tasks or "").strip() or "برنامه اقدام اولویت‌بندی‌شده",
+        )
+
+    def to_dict(self) -> Dict[str, str]:
+        """Serialize for JSON storage / job result."""
+        return {f.name: getattr(self, f.name) for f in fields(self)}
+
+    @classmethod
+    def from_dict(cls, raw: Optional[Dict[str, Any]]) -> "ReportBranding":
+        """
+        Build branding from form/API dict; unknown keys ignored.
+
+        Input:
+            raw: Optional mapping of field → string.
+        """
+        if not raw:
+            return cls()
+        known = {f.name for f in fields(cls)}
+        kwargs = {
+            k: str(v).strip() if v is not None else ""
+            for k, v in raw.items()
+            if k in known
+        }
+        return cls(**kwargs)
+
+
+def branding_defaults() -> Dict[str, str]:
+    """Default branding labels for the web form (pre-fill values)."""
+    return ReportBranding().to_dict()
+
+
 def _to_persian_digits(value: Any) -> str:
     """Convert ASCII digits to Persian digits."""
     text = str(value)
@@ -68,9 +139,10 @@ def _fix_zwnj(text: str) -> str:
 class SeoAuditPdf(FPDF):
     """A4 RTL PDF with Vazirmatn font, header band, and footer page numbers."""
 
-    def __init__(self, site_url: str) -> None:
+    def __init__(self, site_url: str, branding: Optional[ReportBranding] = None) -> None:
         super().__init__(orientation="P", unit="mm", format="A4")
         self.site_url = site_url
+        self.branding = branding or ReportBranding()
         self._in_cover = False
         self.add_font("Vazir", "", str(FONT_DIR / "Vazirmatn-Regular.ttf"))
         self.add_font("Vazir", "B", str(FONT_DIR / "Vazirmatn-Bold.ttf"))
@@ -92,10 +164,11 @@ class SeoAuditPdf(FPDF):
         self.set_y(3)
         self.set_font("Vazir", "B", 9)
         self.set_text_color(*C_WHITE)
-        self.cell(0, 6, "گزارش ممیزی سئو تکنیکال", align="R")
+        self.cell(0, 6, self.branding.header_title, align="R")
         self.set_x(15)
         self.set_font("Vazir", "", 8)
-        self.cell(60, 6, self.site_url, align="L")
+        left = self.branding.header_subtitle or self.site_url
+        self.cell(60, 6, left, align="L")
         self.set_y(18)
         self.set_text_color(*C_DARK)
 
@@ -146,8 +219,8 @@ class SeoAuditPdf(FPDF):
         self.set_text_color(*C_DARK)
 
 
-def _cover_page(pdf: SeoAuditPdf, result: Dict[str, Any], project_name: str) -> None:
-    """Full-bleed cover with title, site, date, and score badge."""
+def _cover_page(pdf: SeoAuditPdf, result: Dict[str, Any], branding: ReportBranding) -> None:
+    """Full-bleed cover with title, client, preparer, date, and score badge."""
     pdf._in_cover = True
     pdf.add_page()
     pdf.set_fill_color(*C_PRIMARY)
@@ -155,21 +228,48 @@ def _cover_page(pdf: SeoAuditPdf, result: Dict[str, Any], project_name: str) -> 
     pdf.set_fill_color(*C_ACCENT)
     pdf.rect(0, 190, 210, 4, style="F")
 
-    pdf.set_y(70)
+    pdf.set_y(55)
     pdf.set_font("Vazir", "B", 26)
     pdf.set_text_color(*C_WHITE)
-    pdf.cell(0, 14, "گزارش ممیزی سئو تکنیکال", align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-    pdf.ln(4)
-    pdf.set_font("Vazir", "", 14)
-    if project_name:
-        pdf.cell(0, 10, project_name, align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(
+        0, 14, branding.report_title,
+        align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+    )
+    pdf.ln(3)
+
+    if branding.client_name:
+        pdf.set_font("Vazir", "", 14)
+        pdf.cell(
+            0, 9, branding.client_name,
+            align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+        )
     pdf.set_font("Vazir", "", 12)
-    pdf.cell(0, 9, result.get("site_url", ""), align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(
+        0, 8, result.get("site_url", ""),
+        align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+    )
+
+    # Preparer / company block on cover
+    if branding.prepared_by or branding.company_name:
+        pdf.ln(4)
+        pdf.set_font("Vazir", "", 11)
+        pdf.set_text_color(200, 215, 228)
+        if branding.prepared_by:
+            pdf.cell(
+                0, 7, f"تهیه‌کننده: {branding.prepared_by}",
+                align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            )
+        if branding.company_name:
+            pdf.cell(
+                0, 7, branding.company_name,
+                align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+            )
+        pdf.set_text_color(*C_WHITE)
 
     # Score circle
     score = int(result.get("score", 0))
-    pdf.set_y(120)
-    cx, cy, r = 105, 145, 24
+    pdf.set_y(125)
+    cx, cy, r = 105, 150, 24
     ring = SEVERITY_COLORS["low"] if score >= 80 else (
         SEVERITY_COLORS["medium"] if score >= 60 else SEVERITY_COLORS["critical"]
     )
@@ -179,6 +279,7 @@ def _cover_page(pdf: SeoAuditPdf, result: Dict[str, Any], project_name: str) -> 
     pdf.set_line_width(0.2)
     pdf.set_xy(cx - r, cy - 9)
     pdf.set_font("Vazir", "B", 24)
+    pdf.set_text_color(*C_WHITE)
     pdf.cell(r * 2, 12, _to_persian_digits(score), align="C", new_y=YPos.NEXT)
     pdf.set_xy(cx - r, cy + 3)
     pdf.set_font("Vazir", "", 9)
@@ -193,6 +294,7 @@ def _cover_page(pdf: SeoAuditPdf, result: Dict[str, Any], project_name: str) -> 
     pdf.set_y(205)
     pdf.set_x(pdf.l_margin)
     pdf.set_font("Vazir", "", 11)
+    pdf.set_text_color(*C_WHITE)
     stats = (
         f"تاریخ گزارش: {_to_persian_digits(date_str)}   |   "
         f"صفحات بررسی‌شده: {_to_persian_digits(result.get('pages_checked', 0))}   |   "
@@ -203,14 +305,17 @@ def _cover_page(pdf: SeoAuditPdf, result: Dict[str, Any], project_name: str) -> 
     pdf.set_x(pdf.l_margin)
     pdf.set_font("Vazir", "", 9)
     pdf.set_text_color(200, 215, 228)
-    pdf.cell(0, 7, "تهیه‌شده با Seo Toolkit", align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(
+        0, 7, branding.cover_footer,
+        align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+    )
     pdf._in_cover = False
 
 
-def _summary_page(pdf: SeoAuditPdf, result: Dict[str, Any]) -> None:
+def _summary_page(pdf: SeoAuditPdf, result: Dict[str, Any], branding: ReportBranding) -> None:
     """Executive summary: severity KPI boxes + interpretation text."""
     pdf.add_page()
-    pdf.section_title("خلاصه مدیریتی")
+    pdf.section_title(branding.section_summary)
 
     counts = result.get("severity_counts", {})
     total_issues = len(result.get("issues", []))
@@ -270,10 +375,14 @@ def _summary_page(pdf: SeoAuditPdf, result: Dict[str, Any]) -> None:
         )
 
 
-def _issues_pages(pdf: SeoAuditPdf, issues: List[Dict[str, Any]]) -> None:
+def _issues_pages(
+    pdf: SeoAuditPdf,
+    issues: List[Dict[str, Any]],
+    branding: ReportBranding,
+) -> None:
     """Detailed issue cards grouped by severity."""
     pdf.add_page()
-    pdf.section_title("جزئیات مشکلات")
+    pdf.section_title(branding.section_issues)
 
     for sev in ("critical", "high", "medium", "low"):
         group = [i for i in issues if i.get("severity") == sev]
@@ -358,10 +467,14 @@ def _issues_pages(pdf: SeoAuditPdf, issues: List[Dict[str, Any]]) -> None:
             pdf.ln(4)
 
 
-def _task_plan_page(pdf: SeoAuditPdf, tasks: List[Dict[str, Any]]) -> None:
+def _task_plan_page(
+    pdf: SeoAuditPdf,
+    tasks: List[Dict[str, Any]],
+    branding: ReportBranding,
+) -> None:
     """Prioritized action table for the dev/content team."""
     pdf.add_page()
-    pdf.section_title("برنامه اقدام اولویت‌بندی‌شده")
+    pdf.section_title(branding.section_tasks)
     pdf.paragraph(
         "جدول زیر ترتیب پیشنهادی رفع مشکلات را نشان می‌دهد. موارد بحرانی باید در اسپرینت جاری برطرف شوند.",
         size=9.5,
@@ -459,6 +572,7 @@ def generate_seo_audit_pdf(
     output_path: Path,
     *,
     project_name: str = "",
+    branding: Optional[ReportBranding] = None,
 ) -> Path:
     """
     Render full Persian PDF report from audit result.
@@ -466,7 +580,8 @@ def generate_seo_audit_pdf(
     Input:
         result: TechnicalSeoAuditor.run() output.
         output_path: Target .pdf path (parent dirs created).
-        project_name: Optional client/project display name for cover.
+        project_name: Fallback client name when branding.client_name empty.
+        branding: Optional cover/header/section overrides.
 
     Output:
         Written PDF path.
@@ -474,11 +589,15 @@ def generate_seo_audit_pdf(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    pdf = SeoAuditPdf(result.get("site_url", ""))
-    _cover_page(pdf, result, project_name)
-    _summary_page(pdf, result)
-    _issues_pages(pdf, result.get("issues", []))
-    _task_plan_page(pdf, result.get("tasks", []))
+    brand = (branding or ReportBranding()).resolved(
+        project_name=project_name,
+        site_url=result.get("site_url", ""),
+    )
+    pdf = SeoAuditPdf(result.get("site_url", ""), brand)
+    _cover_page(pdf, result, brand)
+    _summary_page(pdf, result, brand)
+    _issues_pages(pdf, result.get("issues", []), brand)
+    _task_plan_page(pdf, result.get("tasks", []), brand)
 
     pdf.output(str(output_path))
     logger.info("SEO audit PDF written: %s", output_path)

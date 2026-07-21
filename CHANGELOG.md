@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.10.0 (2026-07-21)
+
+### Technical SEO Audit — editable PDF branding
+- New form section **تنظیمات جلد و هدر گزارش PDF** on `/tools/technical-audit`
+- Editable before generation: cover title, client/project name, prepared-by, agency/company, cover footer, page header (right/left), and section headings (summary / issues / task plan)
+- Values passed into the PDF renderer (`ReportBranding`); blank fields fall back to Persian defaults or project name / site URL
+- Last branding choices remembered in `localStorage` for the next run
+- API: branding fields accepted on `POST /api/v1/technical-audit/start`; `GET /api/v1/technical-audit/branding-defaults` returns defaults
+
 ## v4.9.0 (2026-07-21)
 
 ### Technical SEO Audit — full crawl, stack-aware solutions, Persian fix

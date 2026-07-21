@@ -25,6 +25,64 @@
         {{ field_label(strings.technical_audit_max_pages, strings.tip_technical_audit_pages) }}
         <input type="number" name="max_pages" min="10" max="5000" value="100" />
       </label>
+
+      <details class="ta-branding" open>
+        <summary>{{ strings.technical_audit_branding_title }}</summary>
+        <p class="muted field-hint">{{ strings.technical_audit_branding_hint }}</p>
+        <div class="ta-branding-grid">
+          <label>
+            {{ field_label(strings.technical_audit_report_title, strings.tip_technical_audit_report_title) }}
+            <input type="text" name="report_title" id="ta-report-title" maxlength="120"
+                   value="گزارش ممیزی سئو تکنیکال" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_client_name, strings.tip_technical_audit_client_name) }}
+            <input type="text" name="client_name" id="ta-client-name" maxlength="120"
+                   placeholder="{% if lang == 'fa' %}نام کارفرما / پروژه{% else %}Client / project name{% endif %}" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_prepared_by, strings.tip_technical_audit_prepared_by) }}
+            <input type="text" name="prepared_by" id="ta-prepared-by" maxlength="120"
+                   placeholder="{% if lang == 'fa' %}نام شما یا تیم سئو{% else %}Your name or SEO team{% endif %}" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_company_name, strings.tip_technical_audit_company_name) }}
+            <input type="text" name="company_name" id="ta-company-name" maxlength="120"
+                   placeholder="{% if lang == 'fa' %}نام آژانس / شرکت{% else %}Agency / company{% endif %}" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_cover_footer, strings.tip_technical_audit_cover_footer) }}
+            <input type="text" name="cover_footer" id="ta-cover-footer" maxlength="160"
+                   value="تهیه‌شده با Seo Toolkit" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_header_title, strings.tip_technical_audit_header_title) }}
+            <input type="text" name="header_title" id="ta-header-title" maxlength="120"
+                   value="گزارش ممیزی سئو تکنیکال" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_header_subtitle, strings.tip_technical_audit_header_subtitle) }}
+            <input type="text" name="header_subtitle" id="ta-header-subtitle" maxlength="120"
+                   placeholder="{% if lang == 'fa' %}خالی = آدرس سایت{% else %}Empty = site URL{% endif %}" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_section_summary, strings.tip_technical_audit_section) }}
+            <input type="text" name="section_summary" id="ta-section-summary" maxlength="80"
+                   value="خلاصه مدیریتی" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_section_issues, strings.tip_technical_audit_section) }}
+            <input type="text" name="section_issues" id="ta-section-issues" maxlength="80"
+                   value="جزئیات مشکلات" />
+          </label>
+          <label>
+            {{ field_label(strings.technical_audit_section_tasks, strings.tip_technical_audit_section) }}
+            <input type="text" name="section_tasks" id="ta-section-tasks" maxlength="80"
+                   value="برنامه اقدام اولویت‌بندی‌شده" />
+          </label>
+        </div>
+      </details>
+
       <button type="submit" class="btn btn-primary btn-lg" id="ta-submit">{{ strings.technical_audit_start }}</button>
     </form>
     <div id="ta-error" class="result-panel hidden" style="margin-top:1rem;"></div>
@@ -77,6 +135,29 @@
   .ta-score.bad { background: rgba(248,113,113,.15); color:#fca5a5; }
   .ta-report-actions { display: flex; gap: 0.5rem; }
   .ta-sev { font-size: 0.75rem; }
+  .ta-branding {
+    margin: 0.5rem 0 0.25rem;
+    border: 1px solid var(--border, #333);
+    border-radius: 12px;
+    padding: 0.65rem 0.9rem 0.9rem;
+    background: var(--surface-2, rgba(255,255,255,0.03));
+  }
+  .ta-branding > summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    list-style: none;
+  }
+  .ta-branding > summary::-webkit-details-marker { display: none; }
+  .ta-branding-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 1rem;
+    margin-top: 0.75rem;
+  }
+  @media (max-width: 720px) {
+    .ta-branding-grid { grid-template-columns: 1fr; }
+  }
 </style>
 <script>
   window.TECH_AUDIT_LABELS = {

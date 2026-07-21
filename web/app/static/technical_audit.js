@@ -85,6 +85,20 @@ function initTechnicalAuditPage(lang) {
   taLoadReports(form);
   form.project_slug?.addEventListener("change", () => taLoadReports(form));
 
+  // Restore last branding edits from localStorage
+  try {
+    const raw = localStorage.getItem("ta_report_branding");
+    if (raw) {
+      const saved = JSON.parse(raw);
+      Object.keys(saved || {}).forEach((name) => {
+        const el = form.elements.namedItem(name);
+        if (el && "value" in el && saved[name]) el.value = saved[name];
+      });
+    }
+  } catch (_e) {
+    /* ignore */
+  }
+
   // Full-crawl toggle disables the sample size input
   const fullCrawlBox = document.getElementById("ta-full-crawl");
   fullCrawlBox?.addEventListener("change", () => {
@@ -112,6 +126,36 @@ function initTechnicalAuditPage(lang) {
     body.append("site_url", form.site_url?.value || "");
     // 0 = crawl every sitemap URL (server caps at 5000)
     body.append("max_pages", fullCrawl ? "0" : form.max_pages?.value || "100");
+
+    // PDF branding / cover / section headers
+    const brandingFields = [
+      "report_title",
+      "client_name",
+      "prepared_by",
+      "company_name",
+      "cover_footer",
+      "header_title",
+      "header_subtitle",
+      "section_summary",
+      "section_issues",
+      "section_tasks",
+    ];
+    brandingFields.forEach((name) => {
+      const el = form.elements.namedItem(name);
+      if (el && "value" in el) body.append(name, el.value || "");
+    });
+
+    // Remember last branding choices for this browser
+    try {
+      const saved = {};
+      brandingFields.forEach((name) => {
+        const el = form.elements.namedItem(name);
+        if (el && "value" in el) saved[name] = el.value || "";
+      });
+      localStorage.setItem("ta_report_branding", JSON.stringify(saved));
+    } catch (_e) {
+      /* ignore quota / private mode */
+    }
 
     const submitBtn = document.getElementById("ta-submit");
     if (submitBtn) submitBtn.disabled = true;
