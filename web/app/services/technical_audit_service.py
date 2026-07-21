@@ -93,7 +93,7 @@ def run_technical_audit(
     Input:
         project_slug: Project scope (sitemap + output dir).
         site_url: Optional override; else derived from project sitemap.
-        max_pages: Page sample cap (10..300).
+        max_pages: Page sample cap (10..5000); 0 = crawl all sitemap URLs.
 
     Output:
         Result dict with files list for job.result.
@@ -126,10 +126,12 @@ def run_technical_audit(
         except Exception as exc:
             logger.warning("Sitemap fetch failed, auditing homepage links only: %s", exc)
 
+    # max_pages == 0 → full crawl (auditor caps at ABSOLUTE_PAGE_CAP)
+    effective_pages = 0 if max_pages <= 0 else max(10, min(max_pages, 5000))
     auditor = TechnicalSeoAuditor(
         resolved_site,
         urls,
-        max_pages=max(10, min(max_pages, 300)),
+        max_pages=effective_pages,
         timeout=max(5, timeout),
         concurrency=max(1, min(concurrency, 12)),
         link_check_limit=max(0, min(link_check_limit, 200)),

@@ -2,10 +2,13 @@
 
 from pathlib import Path
 
-from src.seo_pdf_report import _to_persian_digits, generate_seo_audit_pdf
+from src.seo_pdf_report import _fix_zwnj, _to_persian_digits, generate_seo_audit_pdf
 from src.technical_seo_audit import (
+    ABSOLUTE_PAGE_CAP,
     ISSUE_CATALOG,
     PageAudit,
+    STACK_LABELS_FA,
+    STACK_SOLUTIONS,
     TechnicalSeoAuditor,
     _make_issue,
 )
@@ -115,11 +118,43 @@ class TestCatalog:
             assert meta["severity"] in ("critical", "high", "medium", "low")
 
 
+class TestFullCrawlAndStack:
+    """Full-crawl page cap and stack-specific solutions."""
+
+    def test_max_pages_zero_means_full_crawl(self):
+        a = TechnicalSeoAuditor("https://example.com", [], max_pages=0)
+        assert a.max_pages == ABSOLUTE_PAGE_CAP
+
+    def test_max_pages_capped(self):
+        a = TechnicalSeoAuditor("https://example.com", [], max_pages=99999)
+        assert a.max_pages == ABSOLUTE_PAGE_CAP
+
+    def test_stack_solution_picked_for_detected_stack(self):
+        a = _auditor()
+        a.detected_stacks = ["wordpress"]
+        label, solution = a._stack_solution_for("title_missing")
+        assert label == STACK_LABELS_FA["wordpress"]
+        assert "Rank Math" in solution or "Yoast" in solution
+
+    def test_stack_solution_empty_when_unknown(self):
+        a = _auditor()
+        a.detected_stacks = []
+        assert a._stack_solution_for("title_missing") == ("", "")
+
+    def test_stack_solutions_reference_known_issues(self):
+        for issue_id in STACK_SOLUTIONS:
+            assert issue_id in ISSUE_CATALOG, f"unknown issue in solutions: {issue_id}"
+
+
 class TestPdf:
     """PDF generation output."""
 
     def test_persian_digits(self):
         assert _to_persian_digits(1402) == "۱۴۰۲"
+
+    def test_fix_zwnj_replaces_half_space(self):
+        assert _fix_zwnj("نمی\u200cشود") == "نمی\u202fشود"
+        assert "\u200c" not in _fix_zwnj("شبکه\u200cهای اجتماعی")
 
     def test_generate_pdf(self, tmp_path: Path):
         issues = [

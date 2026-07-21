@@ -284,6 +284,152 @@ ISSUE_CATALOG: Dict[str, Dict[str, str]] = {
 
 SEVERITY_WEIGHTS = {"critical": 15.0, "high": 8.0, "medium": 4.0, "low": 1.5}
 
+# Hard safety cap for "crawl everything" mode.
+ABSOLUTE_PAGE_CAP = 5000
+
+# Detected platform keys → Persian display names.
+STACK_LABELS_FA = {
+    "wordpress": "وردپرس",
+    "woocommerce": "ووکامرس",
+    "shopify": "شاپیفای",
+    "magento": "مجنتو",
+    "joomla": "جوملا",
+    "drupal": "دروپال",
+    "nextjs": "Next.js",
+    "nuxt": "Nuxt",
+    "laravel": "لاراول",
+    "django": "جنگو (Django)",
+    "aspnet": "ASP.NET",
+}
+
+# Stack-specific solutions per issue (Persian) — shown next to the generic راهکار.
+STACK_SOLUTIONS: Dict[str, Dict[str, str]] = {
+    "site_https_redirect": {
+        "wordpress": "افزونه Really Simple SSL را فعال کنید یا قانون ریدایرکت 301 را در فایل ‎.htaccess اضافه کنید.",
+        "laravel": "در AppServiceProvider متد URL::forceScheme('https') را فعال و ریدایرکت را در middleware یا وب‌سرور تنظیم کنید.",
+        "django": "SECURE_SSL_REDIRECT = True را در settings.py فعال کنید.",
+        "nextjs": "ریدایرکت را در next.config.js (بخش redirects) یا در سطح Vercel/وب‌سرور تعریف کنید.",
+    },
+    "site_www_canonical": {
+        "wordpress": "آدرس سایت را در تنظیمات عمومی وردپرس (siteurl/home) یکسان کنید و ریدایرکت 301 در ‎.htaccess بگذارید.",
+        "laravel": "ریدایرکت www را در nginx/htaccess یا یک middleware سراسری اعمال کنید.",
+        "nextjs": "در next.config.js با has/host شرط بگذارید یا در DNS/CDN (مثل Cloudflare) ریدایرکت تعریف کنید.",
+    },
+    "site_robots_txt": {
+        "wordpress": "از Rank Math یا Yoast (بخش ابزارها ← ویرایش فایل) robots.txt بسازید.",
+        "shopify": "قالب robots.txt.liquid را در تم ویرایش کنید (Online Store ← Themes ← Edit code).",
+        "nextjs": "فایل app/robots.ts (App Router) یا public/robots.txt اضافه کنید.",
+        "django": "یک view ساده یا پکیج django-robots اضافه کنید.",
+        "laravel": "فایل public/robots.txt را ایجاد کنید.",
+    },
+    "site_sitemap": {
+        "wordpress": "sitemap خودکار Rank Math / Yoast را فعال و در Search Console ثبت کنید.",
+        "shopify": "شاپیفای sitemap.xml خودکار دارد — فقط در robots.txt و Search Console معرفی کنید.",
+        "nextjs": "پکیج next-sitemap یا فایل app/sitemap.ts را اضافه کنید.",
+        "laravel": "پکیج spatie/laravel-sitemap را نصب و یک command زمان‌بندی‌شده بسازید.",
+        "django": "framework داخلی django.contrib.sitemaps را فعال کنید.",
+    },
+    "title_missing": {
+        "wordpress": "در Rank Math / Yoast قالب عنوان (Title Template) را برای همه نوع‌های محتوا تنظیم کنید.",
+        "shopify": "در تنظیمات هر محصول/صفحه بخش Search engine listing را کامل کنید.",
+        "nextjs": "از Metadata API (فایل layout/page) یا next/head برای عنوان یکتای هر صفحه استفاده کنید.",
+        "laravel": "در layout اصلی Blade متغیر عنوان صفحه را الزامی کنید (یا پکیج artesaos/seotools).",
+        "django": "بلاک {% block title %} را در تمپلیت پایه الزامی کنید.",
+    },
+    "title_duplicate": {
+        "wordpress": "قالب عنوان Rank Math / Yoast را بر اساس نام نوشته/محصول داینامیک کنید تا تکرار نشود.",
+        "woocommerce": "برای محصولات، متغیرهای %title% و %category% را در قالب عنوان ترکیب کنید.",
+        "nextjs": "عنوان را از دادهٔ صفحه (generateMetadata) بسازید، نه مقدار ثابت در layout.",
+        "laravel": "عنوان را از مدل (نام محصول/مقاله) در کنترلر پاس بدهید.",
+    },
+    "title_length": {
+        "wordpress": "در ویرایشگر Rank Math / Yoast پیش‌نمایش اسنیپت را ببینید و عنوان را در بازه ۳۰–۶۰ کاراکتر نگه دارید.",
+    },
+    "meta_desc_missing": {
+        "wordpress": "قالب توضیحات متا را در Rank Math / Yoast تنظیم کنید و برای صفحات مهم دستی بنویسید.",
+        "shopify": "بخش Search engine listing هر محصول/کالکشن را کامل کنید.",
+        "nextjs": "description را در generateMetadata هر صفحه مقداردهی کنید.",
+        "laravel": "متا دیسکریپشن را از فیلد excerpt/summary مدل در Blade رندر کنید.",
+        "django": "بلاک meta description را در تمپلیت پایه تعریف و در صفحات پر کنید.",
+    },
+    "meta_desc_duplicate": {
+        "wordpress": "توضیحات پیش‌فرض (Template) را داینامیک کنید — از %excerpt% یا فیلد محصول استفاده کنید.",
+    },
+    "h1_missing": {
+        "wordpress": "در قالب (تم) مطمئن شوید the_title() داخل تگ h1 رندر می‌شود؛ در صفحه‌ساز (المنتور) ویجت Heading را H1 کنید.",
+        "shopify": "در تم، product.title و collection.title باید داخل h1 باشند.",
+        "nextjs": "کامپوننت صفحه باید یک h1 یکتا (معمولاً عنوان محتوا) رندر کند.",
+    },
+    "h1_multiple": {
+        "wordpress": "در تم/المنتور فقط عنوان اصلی H1 بماند؛ لوگو و عنوان‌های بخش‌ها به div یا H2 تبدیل شوند.",
+    },
+    "canonical_missing": {
+        "wordpress": "Rank Math / Yoast تگ canonical خودکار می‌سازد — بررسی کنید غیرفعال نشده باشد.",
+        "shopify": "تم‌های استاندارد canonical_url دارند؛ در theme.liquid تگ canonical را بررسی کنید.",
+        "nextjs": "alternates.canonical را در generateMetadata تنظیم کنید.",
+        "laravel": "تگ canonical را در layout از url()->current() (بدون کوئری) بسازید.",
+    },
+    "noindex_pages": {
+        "wordpress": "تنظیمات «خوانایی» وردپرس (Discourage search engines) و تب‌های Rank Math / Yoast هر برگه را بررسی کنید.",
+    },
+    "img_alt_missing": {
+        "wordpress": "متن جایگزین را در کتابخانه رسانه وارد کنید؛ برای حجم زیاد از افزونه‌هایی مثل Image SEO استفاده کنید.",
+        "woocommerce": "برای تصاویر محصول، alt را از نام محصول پر کنید (قابل اتومات با افزونه).",
+        "nextjs": "پراپ alt در کامپوننت next/image را الزامی کنید (ESLint rule jsx-a11y/alt-text).",
+    },
+    "viewport_missing": {
+        "wordpress": "متای viewport باید در header.php تم باشد؛ تم‌های استاندارد دارند — تم را بررسی کنید.",
+        "nextjs": "در App Router به‌صورت خودکار اضافه می‌شود؛ اگر حذف شده، viewport export را برگردانید.",
+    },
+    "lang_missing": {
+        "wordpress": "تابع language_attributes() باید در تگ html فایل header.php باشد.",
+        "nextjs": "در layout ریشه <html lang=\"fa\"> را تنظیم کنید.",
+        "laravel": "در layout اصلی Blade مقدار lang را از config('app.locale') بگذارید.",
+    },
+    "schema_missing": {
+        "wordpress": "Schema داخلی Rank Math (یا افزونه Schema Pro) را برای نوع‌های محتوا فعال کنید.",
+        "woocommerce": "ووکامرس Schema محصول (قیمت/موجودی) دارد — با Rich Results Test اعتبارسنجی کنید.",
+        "shopify": "اکثر تم‌ها JSON-LD محصول دارند؛ در غیر این صورت snippet اضافه کنید یا اپ SEO نصب کنید.",
+        "nextjs": "اسکریپت JSON-LD را در کامپوننت صفحه رندر کنید (dangerouslySetInnerHTML یا metadata).",
+        "laravel": "پکیج spatie/schema-org برای تولید JSON-LD استفاده کنید.",
+    },
+    "og_missing": {
+        "wordpress": "تب Social افزونه Rank Math / Yoast را فعال و تصویر پیش‌فرض OG تنظیم کنید.",
+        "nextjs": "openGraph را در generateMetadata هر صفحه مقداردهی کنید.",
+        "shopify": "تنظیمات Social sharing image در بخش Preferences فروشگاه.",
+    },
+    "mixed_content": {
+        "wordpress": "با افزونه Better Search Replace همه http:// دیتابیس را به https:// تبدیل کنید.",
+        "laravel": "مقدار ASSET_URL و آدرس‌های hard-code شده در Blade را به https اصلاح کنید.",
+    },
+    "slow_pages": {
+        "wordpress": "افزونه کش (WP Rocket / LiteSpeed Cache) + بهینه‌سازی تصویر WebP + CDN؛ افزونه‌های سنگین را حذف کنید.",
+        "woocommerce": "کش object (Redis) برای سبد خرید و کوئری‌های محصول؛ تعداد variation ها را بهینه کنید.",
+        "nextjs": "صفحات را به SSG/ISR ببرید، از next/image و کش CDN استفاده کنید.",
+        "laravel": "route:cache و config:cache، کش Redis برای کوئری‌ها، و CDN برای asset ها.",
+        "django": "cache framework (Redis/Memcached) و select_related/prefetch_related در کوئری‌ها.",
+        "shopify": "اپ‌های استفاده‌نشده را حذف و اسکریپت‌های تم را lazy کنید.",
+    },
+    "large_pages": {
+        "wordpress": "صفحه‌سازها CSS/JS اضافه تولید می‌کنند — از افزونه Asset CleanUp یا Perfmatters استفاده کنید.",
+        "nextjs": "باندل را با next build --profile آنالیز و کامپوننت‌های سنگین را dynamic import کنید.",
+    },
+    "url_issues": {
+        "wordpress": "ساختار پیوند یکتا (Permalink) را روی «نام نوشته» بگذارید و از پارامترهای اضافه پرهیز کنید.",
+    },
+    "broken_internal_links": {
+        "wordpress": "افزونه Broken Link Checker را اجرا و لینک‌ها را اصلاح کنید؛ ریدایرکت‌ها را با Rank Math Redirection بسازید.",
+        "laravel": "برای مسیرهای حذف‌شده ریدایرکت 301 در routes یا جدول ریدایرکت تعریف کنید.",
+    },
+    "page_broken": {
+        "wordpress": "برگه‌های حذف‌شده را با افزونه Redirection به صفحات مرتبط 301 کنید.",
+        "shopify": "در بخش Navigation ← URL Redirects ریدایرکت بسازید.",
+    },
+    "page_redirect_chain": {
+        "wordpress": "در افزونه Redirection زنجیره‌ها را ادغام کنید (مبدأ مستقیم به مقصد نهایی).",
+    },
+}
+
 
 @dataclass
 class PageAudit:
@@ -386,12 +532,66 @@ class TechnicalSeoAuditor:
         self.host = parsed.netloc
         self.site_url = f"{self.scheme}://{self.host}"
         self.urls = list(urls or [])
-        self.max_pages = max(1, max_pages)
+        # max_pages <= 0 → crawl the whole sitemap (bounded by ABSOLUTE_PAGE_CAP)
+        self.max_pages = ABSOLUTE_PAGE_CAP if max_pages <= 0 else min(max_pages, ABSOLUTE_PAGE_CAP)
         self.timeout = timeout
         self.concurrency = max(1, concurrency)
         self.link_check_limit = max(0, link_check_limit)
         self.session = build_http_session()
         self.session.headers.update(DEFAULT_REQUEST_HEADERS)
+        self.detected_stacks: List[str] = []
+
+    # ---------------- stack / CMS detection ----------------
+
+    def detect_stack(self) -> List[str]:
+        """
+        Detect CMS / tech stack from homepage HTML and response headers.
+
+        Output:
+            Ordered list of stack keys (e.g. ["wordpress", "woocommerce"]).
+        """
+        resp = self._head_or_get(self.site_url + "/")
+        if resp is None:
+            return []
+        html = (resp.text or "")[:400_000].lower()
+        headers = {k.lower(): v.lower() for k, v in resp.headers.items()}
+        cookies = "; ".join(resp.cookies.keys()).lower()
+        powered = headers.get("x-powered-by", "") + " " + headers.get("server", "")
+
+        stacks: List[str] = []
+
+        def hit(key: str, condition: bool) -> None:
+            if condition and key not in stacks:
+                stacks.append(key)
+
+        hit("wordpress", "wp-content" in html or "wp-includes" in html or "wp-json" in html)
+        hit("woocommerce", "woocommerce" in html)
+        hit("shopify", "cdn.shopify.com" in html or "x-shopid" in headers or "myshopify" in html)
+        hit("magento", "mage-" in html or "magento" in html or "x-magento" in " ".join(headers))
+        hit("joomla", "joomla" in html or "/media/jui/" in html)
+        hit("drupal", "drupal" in html or "x-drupal-cache" in headers)
+        hit("nextjs", "__next_data__" in html or "_next/static" in html or "next.js" in powered)
+        hit("nuxt", "__nuxt" in html or "_nuxt/" in html)
+        hit("laravel", "laravel_session" in cookies or "laravel" in powered or "xsrf-token" in cookies)
+        hit("django", "csrftoken" in cookies or "wsgiserver" in powered)
+        hit("aspnet", "asp.net" in powered or "x-aspnet-version" in headers)
+
+        self.detected_stacks = stacks
+        return stacks
+
+    def _stack_solution_for(self, issue_id: str) -> Tuple[str, str]:
+        """
+        Pick best stack-specific solution for an issue.
+
+        Output:
+            (stack_label_fa, solution_text) — empty strings when none.
+        """
+        solutions = STACK_SOLUTIONS.get(issue_id) or {}
+        for stack in self.detected_stacks:
+            text = solutions.get(stack)
+            if text:
+                return STACK_LABELS_FA.get(stack, stack), text
+        return "", ""
 
     # ---------------- site-level checks ----------------
 
@@ -731,6 +931,9 @@ class TechnicalSeoAuditor:
             if on_progress:
                 on_progress(pct, msg)
 
+        report(3, "تشخیص CMS و استک فنی سایت…")
+        self.detect_stack()
+
         report(5, "بررسی‌های سطح سایت (robots، sitemap، HTTPS)…")
         site_issues = self.check_site_level()
 
@@ -770,6 +973,25 @@ class TechnicalSeoAuditor:
         score = self.compute_score(all_issues, len(sample))
         tasks = self.build_task_plan(all_issues)
 
+        # Attach stack-specific solutions to issues and tasks
+        issue_dicts = []
+        stack_solution_by_title: Dict[str, Dict[str, str]] = {}
+        for issue in all_issues:
+            data = issue.to_dict()
+            stack_label, solution = self._stack_solution_for(issue.issue_id)
+            data["stack_label"] = stack_label
+            data["stack_solution"] = solution
+            issue_dicts.append(data)
+            if solution:
+                stack_solution_by_title[issue.title] = {
+                    "stack_label": stack_label,
+                    "stack_solution": solution,
+                }
+        for task in tasks:
+            extra = stack_solution_by_title.get(task["title"]) or {}
+            task["stack_label"] = extra.get("stack_label", "")
+            task["stack_solution"] = extra.get("stack_solution", "")
+
         severity_counts = {s: 0 for s in SEVERITY_ORDER}
         for issue in all_issues:
             severity_counts[issue.severity] = severity_counts.get(issue.severity, 0) + 1
@@ -787,10 +1009,14 @@ class TechnicalSeoAuditor:
             "avg_response_time": round(avg_time, 2),
             "score": score,
             "severity_counts": severity_counts,
-            "issues": [i.to_dict() for i in all_issues],
+            "issues": issue_dicts,
             "tasks": tasks,
             "checked_links": self.link_check_limit,
             "broken_links": broken_count,
+            "detected_stacks": self.detected_stacks,
+            "detected_stacks_fa": [
+                STACK_LABELS_FA.get(s, s) for s in self.detected_stacks
+            ],
         }
         report(95, "ممیزی کامل شد")
         return result

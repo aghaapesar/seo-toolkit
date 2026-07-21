@@ -53,6 +53,18 @@ def _to_persian_digits(value: Any) -> str:
     return text.translate(table)
 
 
+def _fix_zwnj(text: str) -> str:
+    """
+    Replace ZWNJ with narrow no-break space (U+202F).
+
+    fpdf2's bidi pass drops Boundary-Neutral chars (incl. ZWNJ U+200C)
+    before shaping, gluing Persian half-spaced words together
+    (نمی‌شود → نمیشود). U+202F survives bidi, breaks Arabic joining,
+    and renders as a hair-thin non-breaking gap.
+    """
+    return text.replace("\u200c", "\u202f") if text else text
+
+
 class SeoAuditPdf(FPDF):
     """A4 RTL PDF with Vazirmatn font, header band, and footer page numbers."""
 
@@ -65,6 +77,12 @@ class SeoAuditPdf(FPDF):
         self.set_text_shaping(True)
         self.set_auto_page_break(auto=True, margin=22)
         self.set_margins(15, 18, 15)
+
+    def cell(self, w=None, h=None, text="", **kwargs):  # noqa: D102 — ZWNJ-safe override
+        return super().cell(w, h, _fix_zwnj(text), **kwargs)
+
+    def multi_cell(self, w, h=None, text="", **kwargs):  # noqa: D102 — ZWNJ-safe override
+        return super().multi_cell(w, h, _fix_zwnj(text), **kwargs)
 
     def header(self) -> None:  # noqa: D102 — fpdf hook
         if self._in_cover:
@@ -241,6 +259,16 @@ def _summary_page(pdf: SeoAuditPdf, result: Dict[str, Any]) -> None:
         color=C_MUTED,
     )
 
+    stacks_fa = result.get("detected_stacks_fa") or []
+    if stacks_fa:
+        pdf.ln(1)
+        pdf.paragraph(
+            f"پلتفرم شناسایی‌شده: {'، '.join(stacks_fa)} — "
+            "راهکارهای اختصاصی این پلتفرم در بخش جزئیات مشکلات آمده است.",
+            size=10,
+            color=C_PRIMARY,
+        )
+
 
 def _issues_pages(pdf: SeoAuditPdf, issues: List[Dict[str, Any]]) -> None:
     """Detailed issue cards grouped by severity."""
@@ -295,6 +323,18 @@ def _issues_pages(pdf: SeoAuditPdf, issues: List[Dict[str, Any]]) -> None:
                 0, 5.5, f"راهکار: {issue.get('recommendation', '')}", align="R",
                 new_x=XPos.LMARGIN, new_y=YPos.NEXT,
             )
+
+            stack_solution = issue.get("stack_solution") or ""
+            if stack_solution:
+                stack_label = issue.get("stack_label") or "پلتفرم شما"
+                pdf.set_x(pdf.l_margin)
+                pdf.set_text_color(*C_ACCENT)
+                pdf.set_font("Vazir", "B", 9)
+                pdf.multi_cell(
+                    0, 5.5, f"راهکار در {stack_label}: {stack_solution}", align="R",
+                    new_x=XPos.LMARGIN, new_y=YPos.NEXT,
+                )
+                pdf.set_text_color(*C_DARK)
 
             meta = (
                 f"مسئول: {issue.get('owner', '')}   |   حجم کار: {issue.get('effort', '')}"
@@ -356,6 +396,9 @@ def _task_plan_page(pdf: SeoAuditPdf, tasks: List[Dict[str, Any]]) -> None:
     for task in tasks:
         # Estimate needed height from action text length
         action = f"{task.get('title', '')} — {task.get('action', '')}"
+        if task.get("stack_solution"):
+            label = task.get("stack_label") or "پلتفرم"
+            action += f" [{label}: {task['stack_solution']}]"
         pdf.set_font("Vazir", "", 8.5)
         lines = max(1, len(action) // 62 + 1)
         h = max(row_h, lines * 4.5 + 2)

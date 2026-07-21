@@ -85,6 +85,13 @@ function initTechnicalAuditPage(lang) {
   taLoadReports(form);
   form.project_slug?.addEventListener("change", () => taLoadReports(form));
 
+  // Full-crawl toggle disables the sample size input
+  const fullCrawlBox = document.getElementById("ta-full-crawl");
+  fullCrawlBox?.addEventListener("change", () => {
+    const input = form.max_pages;
+    if (input) input.disabled = fullCrawlBox.checked;
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     errorBox?.classList.add("hidden");
@@ -99,10 +106,12 @@ function initTechnicalAuditPage(lang) {
       return;
     }
 
+    const fullCrawl = document.getElementById("ta-full-crawl")?.checked;
     const body = new FormData();
     body.append("project_slug", slug);
     body.append("site_url", form.site_url?.value || "");
-    body.append("max_pages", form.max_pages?.value || "100");
+    // 0 = crawl every sitemap URL (server caps at 5000)
+    body.append("max_pages", fullCrawl ? "0" : form.max_pages?.value || "100");
 
     const submitBtn = document.getElementById("ta-submit");
     if (submitBtn) submitBtn.disabled = true;

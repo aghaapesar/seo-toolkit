@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.9.0 (2026-07-21)
+
+### Technical SEO Audit — full crawl, stack-aware solutions, Persian fix
+- **Full sitemap crawl**: new checkbox «کرال کامل همه صفحات سایت‌مپ» — audits every sitemap URL (safety cap 5000); manual sample raised to 10–5000 pages
+- **CMS/stack detection**: homepage HTML + headers → WordPress, WooCommerce, Shopify, Magento, Joomla, Drupal, Next.js, Nuxt, Laravel, Django, ASP.NET
+- **Stack-specific solutions (Persian)**: each issue now shows «راهکار در {پلتفرم}» tailored to the detected stack (e.g. Rank Math/Yoast for WordPress, next-sitemap for Next.js, spatie packages for Laravel); included in issue cards and the prioritized task table; detected platform shown in executive summary
+- **Fix Persian half-space (نیم‌فاصله)**: fpdf2's bidi pass drops ZWNJ, gluing words (نمی‌شود → نمیشود); ZWNJ is now mapped to narrow no-break space (U+202F) so half-spaced words render correctly throughout the PDF
+
 ## v4.8.0 (2026-07-21)
 
 ### Technical SEO Audit — Persian PDF report

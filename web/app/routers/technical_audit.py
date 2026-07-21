@@ -41,7 +41,7 @@ def _run_audit_job(job) -> None:
     result = run_technical_audit(
         params["project_slug"],
         site_url=params.get("site_url") or "",
-        max_pages=int(params.get("max_pages") or 100),
+        max_pages=int(params.get("max_pages", 100)),  # 0 = full crawl
         concurrency=int(params.get("concurrency") or 6),
         timeout=int(params.get("timeout") or 20),
         link_check_limit=int(params.get("link_check_limit") or 40),
@@ -77,7 +77,7 @@ async def start_audit(
     Input:
         project_slug: Required project scope.
         site_url: Optional homepage override (else from project sitemap).
-        max_pages: Page sample size (10..300).
+        max_pages: Page sample size (10..5000); 0 = crawl all sitemap URLs.
     """
     slug = project_slug.strip()
     if not slug:
@@ -89,7 +89,7 @@ async def start_audit(
         {
             "project_slug": slug,
             "site_url": site_url.strip(),
-            "max_pages": max(10, min(max_pages, 300)),
+            "max_pages": 0 if max_pages <= 0 else max(10, min(max_pages, 5000)),
             "concurrency": max(1, min(concurrency, 12)),
             "timeout": max(5, min(timeout, 60)),
             "link_check_limit": max(0, min(link_check_limit, 200)),
