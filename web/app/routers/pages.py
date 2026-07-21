@@ -30,6 +30,8 @@ TOOL_PAGES = {
     "internal-links": ("tools/internal_links.html", "Internal Links", "لینک داخلی"),
     "knowledge-export": ("tools/knowledge_export.html", "Knowledge Export", "خروجی Knowledge Base"),
     "project-tasks": ("tools/project_tasks.html", "Project Tasks", "یادداشت تسک‌ها"),
+    "service-status": ("tools/service_status.html", "Service Status", "وضعیت سرویس‌ها"),
+    "technical-audit": ("tools/technical_audit.html", "Technical SEO Audit", "ممیزی سئو تکنیکال"),
 }
 
 # Map background job types to tool page slugs for task progress back-links.
@@ -40,6 +42,7 @@ JOB_TYPE_TO_TOOL: dict[str, str] = {
     "site_index": "site-index",
     "product_gap": "product-gap",
     "knowledge_export": "knowledge-export",
+    "technical_audit": "technical-audit",
 }
 
 
@@ -109,8 +112,15 @@ def tool_page(request: Request, tool_id: str):
         )
     lang = request.query_params.get("lang") or request.cookies.get("lang", "fa")
 
-    # Product gap, internal links, and knowledge export need login.
-    if tool_id in ("product-gap", "internal-links", "knowledge-export", "project-tasks"):
+    # Product gap, internal links, knowledge export, and service status need login.
+    if tool_id in (
+        "product-gap",
+        "internal-links",
+        "knowledge-export",
+        "project-tasks",
+        "service-status",
+        "technical-audit",
+    ):
         user = get_optional_user(request)
         if not user:
             next_path = request.url.path

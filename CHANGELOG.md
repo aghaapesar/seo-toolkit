@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.8.0 (2026-07-21)
+
+### Technical SEO Audit — Persian PDF report
+- New tool **ممیزی سئو تکنیکال / Technical SEO Audit** at `/tools/technical-audit` (sidebar → Index)
+- **27-check engine** (`src/technical_seo_audit.py`):
+  - Site level: HTTP→HTTPS redirect, www canonicalization, robots.txt, sitemap.xml, soft-404, favicon
+  - Page level (sitemap sample up to 300): status/redirect chains, title (missing/duplicate/length), meta description (missing/duplicate), H1, canonical, noindex, image alt, viewport, `lang`, JSON-LD schema, Open Graph, mixed content, response time, HTML size, URL structure, broken internal links
+- **Health score 0–100** weighted by severity and prevalence
+- **Persian RTL PDF report** (`src/seo_pdf_report.py`, fpdf2 + Vazirmatn + text shaping):
+  cover with score ring, executive summary with severity KPIs, issue cards with راهکار/مسئول/حجم کار, prioritized task table for the dev & content teams
+- Reports saved per project: `projects/{slug}/output/technical_audit/audit_*.pdf|.json` with download API
+- Background job with live Persian progress; result on shared task page with PDF/JSON downloads
+- API: `POST /api/v1/technical-audit/start`, `GET /api/v1/technical-audit/reports`, `GET /api/v1/technical-audit/download`
+- Fix: register previously-unregistered routers in `main.py` (`content_audit`, `content_cluster`, `site_index`, `product_gap`, `internal_links`) — their APIs returned 404
+- New deps: `fpdf2>=2.7.9`, `uharfbuzz` (Persian text shaping); bundled `assets/fonts/Vazirmatn-*.ttf`
+- Tests: `tests/test_technical_audit.py` (aggregation, scoring, task plan, PDF output)
+
+## v4.7.0 (2026-07-17)
+
+### Service status monitoring (Phase 2)
+- New page **وضعیت سرویس‌ها / Service status** at `/tools/service-status` (sidebar → System)
+- Live probes: app, SQLite, `config.yaml`, GapGPT DNS/HTTPS, configured AI models
+- SQLite history (`service_check_history`) with **24h uptime** sparklines; auto-refresh every 60s
+- API: `GET/POST /api/v1/services/status`, `GET /api/v1/services/history`
+- Settings page: restore `initSettingsPage` (network panel + model list) and link to full monitor
+
+## v4.6.1 (2026-07-16)
+
+### Fix — Knowledge Export settings API 404
+- Register `settings_api` router in `main.py` so `/api/v1/settings/models` works (model picker on Knowledge Export page)
+
 ## v4.6.0 (2026-07-16)
 
 ### Knowledge Export — RAG per-URL export (Phase 1)

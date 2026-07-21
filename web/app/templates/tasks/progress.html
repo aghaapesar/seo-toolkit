@@ -21,12 +21,14 @@
 
     <ol class="task-steps" id="task-steps" aria-live="polite"></ol>
 
+    <div id="task-sitemap-view" class="status-box sitemap-view-box hidden" aria-live="polite"></div>
+
     <div id="task-result" class="result-panel hidden"></div>
     <div id="task-export-files" class="export-files-panel hidden"></div>
     <div id="task-error" class="result-panel result-error hidden"></div>
 
     <div class="task-actions">
-      <a href="/tools/index-diff?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}" class="btn btn-ghost" id="task-back-link">{{ strings.back_to_tool }}</a>
+      <a href="{{ tool_route }}?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}" class="btn btn-ghost" id="task-back-link">{{ back_to_tool_label }}</a>
     </div>
   </section>
 </div>
@@ -41,6 +43,8 @@
     failed: {{ strings.task_status_failed | tojson }},
     doneTitle: {{ strings.task_done_title | tojson }},
     doneMessage: {{ strings.task_done_message | tojson }},
+    doneMessageIndexDiff: {{ strings.task_done_message_index_diff | tojson }},
+    doneMessageCluster: {{ strings.task_done_message_cluster | tojson }},
     fetchingMain: {{ strings.status_fetching_sitemap | tojson }},
     fetchingSub: {{ strings.status_fetching_sub | tojson }},
     serverDiff: {{ strings.status_server_diff | tojson }},
@@ -51,9 +55,65 @@
     error: {{ strings.error | tojson }},
     filesTitle: {{ strings.export_files_title | default('', true) | tojson }},
     filesHint: {{ strings.export_files_hint | default('', true) | tojson }},
+    sitemapFetchedTitle: {{ strings.sitemap_fetched_title | default('', true) | tojson }},
+    sitemapSourcesList: {{ strings.sitemap_sources_list | default('', true) | tojson }},
+    sitemapRoot: {{ strings.sitemap_root | default('', true) | tojson }},
+    sitemapSub: {{ strings.sitemap_sub | default('', true) | tojson }},
+    sitemapSources: {{ strings.sitemap_sources_count | default('', true) | tojson }},
+    sitemapUrlPreview: {{ strings.sitemap_url_preview | default('', true) | tojson }},
+    sitemapPreviewMore: {{ strings.sitemap_preview_more | default('', true) | tojson }},
+    sitemapNotFetched: {{ strings.sitemap_not_fetched | default('', true) | tojson }},
+    sitemapFetchingLive: {{ strings.sitemap_fetching_live | default('', true) | tojson }},
+    indexSitemap: {{ strings.index_sitemap_count | default('', true) | tojson }},
+    indexLastFetch: {{ strings.index_last_fetch | default('', true) | tojson }},
     statusIndexed: {{ strings.url_status_indexed | default('', true) | tojson }},
     statusPending: {{ strings.url_status_pending | default('', true) | tojson }},
     statusExcluded: {{ strings.url_status_excluded | default('', true) | tojson }},
+    clusterCount: {{ strings.cluster_count | default('', true) | tojson }},
+    calendarPosts: {{ strings.calendar_posts | default('', true) | tojson }},
+    calendarStart: {{ strings.calendar_start | default('', true) | tojson }},
+    backToToolIndexDiff: {{ strings.back_to_tool_index_diff | tojson }},
+    backToToolContentCluster: {{ strings.back_to_tool_content_cluster | tojson }},
+    backToToolContentAudit: {{ strings.back_to_tool_content_audit | tojson }},
+    openCalendarBoard: {{ strings.open_calendar_board | tojson }},
+    doneMessageAudit: {{ strings.task_done_message_audit | tojson }},
+    auditMatches: {{ strings.audit_matches | tojson }},
+    auditUpdates: {{ strings.audit_updates | tojson }},
+    auditScraped: {{ strings.audit_scraped | tojson }},
+    auditApply: {{ strings.audit_apply | tojson }},
+    auditApplyLive: {{ strings.audit_apply_live | tojson }},
+    auditApplyAll: {{ strings.audit_apply_all | tojson }},
+    auditNoMatch: {{ strings.audit_no_match | tojson }},
+    auditUnmatchedItems: {{ strings.audit_unmatched_items | tojson }},
+    auditUnmatchedPages: {{ strings.audit_unmatched_pages | tojson }},
+    backToToolSiteIndex: {{ strings.back_to_tool_site_index | tojson }},
+    pauseIndex: {{ strings.site_index_pause | tojson }},
+    resumeIndex: {{ strings.site_index_resume | tojson }},
+    pauseRequested: {{ strings.site_index_pause_requested | tojson }},
+    paused: {{ strings.task_status_paused | tojson }},
+    indexProcessed: {{ strings.site_index_processed | tojson }},
+    indexSuccess: {{ strings.site_index_success | tojson }},
+    indexPausedHint: {{ strings.site_index_paused_hint | tojson }},
+    creditExhausted: {{ strings.credit_exhausted | tojson }},
+    doneMessageSiteIndex: {{ strings.task_done_message_site_index | tojson }},
+    doneMessageKnowledgeExport: {{ strings.task_done_message_knowledge_export | tojson }},
+    backToToolKnowledgeExport: {{ strings.back_to_tool_knowledge_export | tojson }},
+    keTotal: {{ strings.ke_total | tojson }},
+    keSuccess: {{ strings.ke_success | tojson }},
+    keFailed: {{ strings.ke_failed | tojson }},
+    keDuplicate: {{ strings.ke_duplicate | tojson }},
+    keParts: {{ strings.ke_parts | tojson }},
+    backToToolTechnicalAudit: {{ strings.back_to_tool_technical_audit | tojson }},
+    doneMessageTechnicalAudit: {{ strings.task_done_message_technical_audit | tojson }},
+    technicalAuditScore: {{ strings.technical_audit_score | tojson }},
+  };
+  window.TASK_TOOL_ROUTES = {
+    index_diff: "/tools/index-diff",
+    content_cluster: "/tools/content-cluster",
+    content_audit: "/tools/content-audit",
+    site_index: "/tools/site-index",
+    knowledge_export: "/tools/knowledge-export",
+    technical_audit: "/tools/technical-audit",
   };
 </script>
 <script src="/static/tasks.js"></script>

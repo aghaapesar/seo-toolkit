@@ -14,16 +14,24 @@ from src import __version__
 from web.app.routers import (
     auth,
     calendar_api,
+    content_audit,
+    content_cluster,
     dashboard_api,
     health,
     index_diff,
+    internal_links,
     jobs,
     knowledge_export,
     modes,
     pages,
+    product_gap,
     project_tasks,
     projects,
+    service_monitor,
+    settings_api,
+    site_index,
     sitemap_proxy,
+    technical_audit,
 )
 
 logger = logging.getLogger(__name__)
@@ -69,4 +77,12 @@ app.include_router(sitemap_proxy.router)
 app.include_router(modes.router)
 app.include_router(projects.router)
 app.include_router(pages.router)
+app.include_router(settings_api.router)
 app.include_router(knowledge_export.router)
+app.include_router(service_monitor.router)
+app.include_router(content_audit.router)
+app.include_router(content_cluster.router)
+app.include_router(site_index.router)
+app.include_router(product_gap.router)
+app.include_router(internal_links.router)
+app.include_router(technical_audit.router)

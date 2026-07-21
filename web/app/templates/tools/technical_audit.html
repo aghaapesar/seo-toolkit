@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "partials/project_select.html" import project_select %}
+{% from "partials/field_label.html" import field_label %}
+{% block subheading %}{{ strings.technical_audit_desc }}{% endblock %}
+{% block content %}
+<div class="tool-layout">
+  <section class="panel panel-form">
+    <div class="panel-badge g-cyan">Audit</div>
+    <h2>{% if lang == 'fa' %}ممیزی سئو تکنیکال{% else %}Technical SEO Audit{% endif %}</h2>
+    <p class="muted" style="margin-bottom: 1.25rem;">{{ strings.technical_audit_desc }}</p>
+
+    <form id="form-technical-audit" class="stack-form">
+      {% if projects %}
+      {{ project_select(lang, strings, projects, active_project) }}
+      {% endif %}
+      <label>
+        {{ field_label(strings.technical_audit_site_url, strings.tip_technical_audit_site) }}
+        <input type="url" name="site_url" id="ta-site-url" placeholder="https://example.com" />
+      </label>
+      <label>
+        {{ field_label(strings.technical_audit_max_pages, strings.tip_technical_audit_pages) }}
+        <input type="number" name="max_pages" min="10" max="300" value="100" />
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg" id="ta-submit">{{ strings.technical_audit_start }}</button>
+    </form>
+    <div id="ta-error" class="result-panel hidden" style="margin-top:1rem;"></div>
+
+    <section style="margin-top:1.75rem;">
+      <h3 class="section-title">{{ strings.technical_audit_reports }}</h3>
+      <div id="ta-reports" class="ta-reports">
+        <p class="muted">{{ strings.technical_audit_no_reports }}</p>
+      </div>
+    </section>
+  </section>
+
+  <aside class="panel panel-info panel-info-stack">
+    <h3 class="panel-info-title">{% if lang == 'fa' %}چه چیزهایی بررسی می‌شود؟{% else %}What is checked{% endif %}</h3>
+    <ol class="steps">
+      {% if lang == 'fa' %}
+      <li>زیرساخت: HTTPS، ریدایرکت www، robots.txt، sitemap، صفحه 404</li>
+      <li>متا: Title و Description (نبود، تکرار، طول)، Canonical، noindex</li>
+      <li>ساختار: H1، alt تصاویر، viewport موبایل، زبان صفحه، Schema و Open Graph</li>
+      <li>سرعت و سلامت: زمان پاسخ، حجم HTML، Mixed Content، لینک‌های شکسته</li>
+      <li>خروجی: گزارش PDF فارسی با خلاصه مدیریتی و برنامه اقدام اولویت‌بندی‌شده</li>
+      {% else %}
+      <li>Infrastructure: HTTPS, www redirect, robots.txt, sitemap, 404 page</li>
+      <li>Meta: title/description (missing, duplicate, length), canonical, noindex</li>
+      <li>Structure: H1, image alt, mobile viewport, lang, Schema, Open Graph</li>
+      <li>Speed & health: response time, HTML size, mixed content, broken links</li>
+      <li>Output: Persian PDF with executive summary and prioritized task plan</li>
+      {% endif %}
+    </ol>
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+<style>
+  .ta-reports { display: flex; flex-direction: column; gap: 0.75rem; }
+  .ta-report-card {
+    border: 1px solid var(--border, #333); border-radius: 12px; padding: 0.9rem 1rem;
+    display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: space-between; align-items: center;
+  }
+  .ta-report-meta { display: flex; flex-direction: column; gap: 0.2rem; }
+  .ta-report-site { font-weight: 600; font-size: 0.92rem; }
+  .ta-report-sub { font-size: 0.8rem; color: var(--muted, #999); }
+  .ta-score {
+    font-weight: 700; font-size: 1.15rem; padding: 0.3rem 0.7rem; border-radius: 10px;
+  }
+  .ta-score.good { background: rgba(52,211,153,.15); color:#6ee7b7; }
+  .ta-score.mid { background: rgba(251,191,36,.15); color:#fcd34d; }
+  .ta-score.bad { background: rgba(248,113,113,.15); color:#fca5a5; }
+  .ta-report-actions { display: flex; gap: 0.5rem; }
+  .ta-sev { font-size: 0.75rem; }
+</style>
+<script>
+  window.TECH_AUDIT_LABELS = {
+    noReports: {{ strings.technical_audit_no_reports | tojson }},
+    score: {{ strings.technical_audit_score | tojson }},
+    pdf: {{ strings.technical_audit_download_pdf | tojson }},
+    json: {{ strings.technical_audit_download_json | tojson }},
+  };
+</script>
+<script src="/static/technical_audit.js?v={{ version }}"></script>
+<script>
+  initTechnicalAuditPage("{{ lang }}");
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-# Seo Toolkit v4.5.0
+# Seo Toolkit v4.8.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -33,6 +33,17 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 
 ### Content calendar assignee (v4.4.0)
 - **تقویم محتوا** Kanban cards: assign each article to a project member (chip + dropdown)
+
+### Technical SEO Audit — Persian PDF (v4.8.0)
+- New tool **ممیزی سئو تکنیکال** at `/tools/technical-audit`
+- 27 technical checks: HTTPS/www redirects, robots.txt, sitemap, soft-404, title/meta/H1/canonical/noindex, image alt, viewport, schema, Open Graph, mixed content, speed, HTML size, URL structure, broken internal links
+- Health score 0–100 + **polished Persian RTL PDF** (Vazirmatn font): cover with score ring, executive summary, issue cards with راهکار, prioritized task plan (مسئول + حجم کار) — ready to hand to client & dev team
+- Reports archived per project with PDF/JSON downloads
+
+### Service status monitoring (v4.7.0)
+- Sidebar **System → وضعیت سرویس‌ها**: live health for app, DB, GapGPT network, AI models
+- 24h uptime history (SQLite) with sparklines; refresh / auto-poll
+- API: `/api/v1/services/status`, `/api/v1/services/history`
 
 ### Knowledge Exporter (v4.6.0) — per-URL RAG + LLM + registry
 - **One `.md` per URL**: `pages/{page_type}/{slug}.md` with RAG frontmatter

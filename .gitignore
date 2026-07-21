@@ -36,6 +36,10 @@ ENV/
 
 # Configuration (contains sensitive API keys)
 config.yaml
+
+# Local SQLite (users + calendar boards)
+data/*.db
+data/*.db-*
 .env
 .env.local
 
@@ -47,8 +51,11 @@ input/
 sitemaps/
 !sitemaps/.gitkeep
 
-# Output files
-output/*
+# Knowledge export output (RAG Markdown parts)
+output/knowledge_export/
+!output/knowledge_export/.gitkeep
+**/.analysis/
+
 !output/.gitkeep
 !output/content_generated/
 !output/content_generated/.gitkeep
@@ -145,5 +152,12 @@ index_history/*
 # Multi-project data (per-project folders; registry stays local)
 projects/*
 !projects/.gitkeep
+
+# Web upload imports and PDF extraction scratch (runtime artifacts)
+output/web_uploads/
+output/pdf_extract/
+output/technical_audit/
+output/*.pdf
+output/*.png
 
 

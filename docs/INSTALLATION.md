@@ -72,6 +72,16 @@ Open http://127.0.0.1:8000 — use **Projects** in the sidebar to create sites a
 12. Check **needs procurement** list sorted by priority (search volume + competition).
 13. Semantic matching groups variants like «جالیز» and «خرید بازی فکری جالیز» under the same product.
 
+### Technical SEO Audit — Persian PDF (v4.8.0)
+
+1. Open **ممیزی سئو تکنیکال / Technical SEO Audit** in the sidebar (login required).
+2. Select a project — the site URL is derived from the project sitemap (or enter it manually).
+3. Choose sample size (10–300 pages) and click **شروع ممیزی**.
+4. Watch progress on the task page; when done, download the **Persian PDF report** and JSON data.
+5. Previous reports are archived under `projects/{slug}/output/technical_audit/`.
+
+Requires `fpdf2` + `uharfbuzz` (in `requirements.txt`) and bundled Vazirmatn fonts in `assets/fonts/`.
+
 ### Internal Link Intelligence (Mode 11)
 
 1. Run **Site Index** for the project (full sitemap scrape required).
@@ -113,6 +123,15 @@ Options: `--include-pattern`, `--exclude-pattern`, `--urls-file`, `--rate-limit`
 3. Select patterns (checkboxes); each row shows pattern, type badge, sample titles.
 4. **Phase 2** — pick AI model, test connection, set filters (blog, noindex, product sample limit) → **Start export**.
 5. Download individual `pages/…` files, ZIP selection, or legacy `knowledge_part_*.md` from the tool page.
+
+### Service status monitoring
+
+1. Open **وضعیت سرویس‌ها / Service status** from the sidebar (System section). Sign in if prompted.
+2. Click **بررسی الان / Check now** (or wait for auto-refresh every 60s).
+3. Review Local (app, DB, config), Network (GapGPT hosts), and AI model cards.
+4. Sparklines show **24h uptime** from stored samples (`data/seo_toolkit.db`).
+5. Optional: uncheck **Test AI models** for a faster network-only refresh.
+6. Settings page still shows a compact GapGPT network panel with a link to this page.
 
 ### Project task board
 
