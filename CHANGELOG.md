@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.13.0 (2026-07-21)
+
+### Technical Issues Check — durable reports + Excel trackers + re-check
+- **Fix report overwrite**: hostnames with dots (e.g. `zitro.ir`) no longer collapse to `audit_zitro.json` via `Path.with_suffix`; each run keeps a unique stamped folder name (`audit_zitro-ir_YYYYMMDD_HHMMSS.*`)
+- **Durable history**: `reports_index.json` + disk scan; PDF/JSON/Excel/ZIP stay under `projects/{slug}/output/technical_audit/` for later workflows
+- **Excel exports** (styled, RTL, filter, freeze): جدا برای **تیم فنی**، **تیم محتوا**، و **همه** — یک ردیف به‌ازای هر URL+مشکل با اولویت، شدت، پیشنهاد، راهکار استک
+- **وضعیت تسک** در اکسل (`☐ باز` / `☑ انجام‌شده`) با dropdown؛ ردیف انجام‌شده با conditional formatting سبز می‌شود
+- **پکیج ZIP**: PDF + JSON + همه اکسل‌ها در یک دانلود
+- **آپلود مجدد اکسل**: `POST /api/v1/technical-audit/recheck` موارد باز را دوباره اسکن می‌کند و با نوتیف (موفق / هشدار / جزئی) اعلام می‌کند چه چیزی هنوز باز است؛ لاگ `*_recheck_*.json` ذخیره می‌شود
+- Full URL lists kept in JSON (`urls`) for Excel; PDF still uses `sample_urls` (top 10)
+
 ## v4.12.0 (2026-07-21)
 
 ### Naming, categories & access refactor

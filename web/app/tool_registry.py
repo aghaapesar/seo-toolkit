@@ -35,6 +35,7 @@ JOB_TYPE_TO_TOOL: Dict[str, str] = {
     "product_gap": "product-gap",
     "knowledge_export": "knowledge-export",
     "technical_audit": "technical-audit",
+    "technical_audit_recheck": "technical-audit",
     "internal_links": "internal-links",
 }
 

@@ -34,6 +34,17 @@
 </div>
 {% endblock %}
 {% block scripts %}
+<style>
+  .result-notify {
+    margin: 0.75rem 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+  .result-notify-success { background: rgba(52,211,153,.15); color: #6ee7b7; }
+  .result-notify-warning { background: rgba(251,191,36,.15); color: #fcd34d; }
+  .result-notify-info { background: rgba(96,165,250,.15); color: #93c5fd; }
+</style>
 <script>
   window.TASK_LABELS = {
     pending: {{ strings.task_status_pending | tojson }},
@@ -105,7 +116,11 @@
     keParts: {{ strings.ke_parts | tojson }},
     backToToolTechnicalAudit: {{ strings.back_to_tool_technical_audit | tojson }},
     doneMessageTechnicalAudit: {{ strings.task_done_message_technical_audit | tojson }},
+    doneMessageTechnicalRecheck: {{ strings.task_done_message_technical_recheck | tojson }},
     technicalAuditScore: {{ strings.technical_audit_score | tojson }},
+    technicalRecheckDone: {{ strings.technical_audit_recheck_done | tojson }},
+    technicalRecheckResolved: {{ strings.technical_audit_recheck_resolved | tojson }},
+    technicalRecheckStillOpen: {{ strings.technical_audit_recheck_still_open | tojson }},
   };
   window.TASK_TOOL_ROUTES = {
     index_diff: "/tools/index-diff",
@@ -114,6 +129,7 @@
     site_index: "/tools/site-index",
     knowledge_export: "/tools/knowledge-export",
     technical_audit: "/tools/technical-audit",
+    technical_audit_recheck: "/tools/technical-audit",
   };
 </script>
 <script src="/static/tasks.js"></script>

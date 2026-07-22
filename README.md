@@ -1,4 +1,4 @@
-# Seo Toolkit v4.12.0
+# Seo Toolkit v4.13.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -22,6 +22,12 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 
 ---
 
+### Technical Issues Check — durable Excel + package (v4.13.0)
+- Reports no longer overwrite each other on dotted domains; full history kept per project
+- Downloads: **ZIP package**, PDF, JSON, and separate Excels for **technical / content / all** teams
+- Excel Status column with green done-rows; re-upload Excel to re-check open issues and get notified
+- See also PDF branding / stack solutions in v4.8–v4.12 notes below
+
 ### Naming & access refactor (v4.12.0)
 - Renamed **ممیزی سئو تکنیکال** → **بررسی مشکلات فنی** (Technical Issues Check); PDF defaults and CTAs updated
 - Renamed overlapping labels: Content Audit → **تطبیق تقویم محتوا**, SEO Scraping → **استخراج متادیتا**, linking tools clarified (درج لینک vs هاب لینک)
@@ -41,7 +47,7 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 ### Content calendar assignee (v4.4.0)
 - **تقویم محتوا** Kanban cards: assign each article to a project member (chip + dropdown)
 
-### Technical Issues Check — Persian PDF (v4.8.0 – v4.12.0)
+### Technical Issues Check — Persian PDF (v4.8.0 – v4.13.0)
 - New tool **بررسی مشکلات فنی** at `/tools/technical-audit`
 - 27 technical checks: HTTPS/www redirects, robots.txt, sitemap, soft-404, title/meta/H1/canonical/noindex, image alt, viewport, schema, Open Graph, mixed content, speed, HTML size, URL structure, broken internal links
 - **Full sitemap crawl** (up to 5000 pages) or manual sample size
@@ -49,7 +55,8 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 - **CMS/stack detection** (WordPress, WooCommerce, Shopify, Next.js, Laravel, Django, …) with **platform-specific Persian solutions** per issue
 - **Editable PDF branding**: cover title, prepared-by, agency, page headers, and section headings before generation
 - Health score 0–100 + **polished Persian RTL PDF** (Vazirmatn font): cover with score ring, executive summary, issue cards with راهکار, prioritized task plan (مسئول + حجم کار) — ready to hand to client & dev team
-- Reports archived per project with PDF/JSON downloads
+- **Excel trackers** (فنی / محتوا / همه) with Status checkbox column + green done rows; **ZIP package** download; **Excel re-upload** re-checks remaining open issues
+- Reports archived per project under `projects/{slug}/output/technical_audit/` (unique stamped files + `reports_index.json`)
 
 ### Service status monitoring (v4.7.0)
 - Sidebar **System → وضعیت سرویس‌ها**: live health for app, DB, GapGPT network, AI models

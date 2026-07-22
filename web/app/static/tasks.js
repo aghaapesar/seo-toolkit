@@ -102,6 +102,7 @@ const TASK_TOOL_BACK_LABELS = {
   site_index: "backToToolSiteIndex",
   knowledge_export: "backToToolKnowledgeExport",
   technical_audit: "backToToolTechnicalAudit",
+  technical_audit_recheck: "backToToolTechnicalAudit",
 };
 
 function updateSiteIndexControls(labels, job) {
@@ -291,6 +292,7 @@ function showTaskResult(labels, job) {
   const isIndex = job.job_type === "site_index";
   const isKnowledge = job.job_type === "knowledge_export";
   const isTechAudit = job.job_type === "technical_audit";
+  const isTechRecheck = job.job_type === "technical_audit_recheck";
   const doneMsg = isCluster
     ? labels.doneMessageCluster || labels.doneMessage
     : isAudit
@@ -299,9 +301,11 @@ function showTaskResult(labels, job) {
         ? labels.doneMessageSiteIndex || labels.doneMessage
         : isKnowledge
           ? labels.doneMessageKnowledgeExport || labels.doneMessage
-          : isTechAudit
-            ? labels.doneMessageTechnicalAudit || labels.doneMessage
-            : labels.doneMessageIndexDiff || labels.doneMessage;
+          : isTechRecheck
+            ? labels.doneMessageTechnicalRecheck || r.notification || labels.doneMessage
+            : isTechAudit
+              ? labels.doneMessageTechnicalAudit || labels.doneMessage
+              : labels.doneMessageIndexDiff || labels.doneMessage;
 
   if (title) title.textContent = labels.doneTitle;
   box.innerHTML = `
@@ -326,6 +330,14 @@ function showTaskResult(labels, job) {
       <div class="result-row"><span>${labels.clusterCount || "Clusters"}</span><strong>${r.cluster_count || 0}</strong></div>
       <div class="result-row"><span>${labels.calendarPosts || "Calendar posts"}</span><strong>${r.calendar_summary?.total_posts || 0}</strong></div>
       <div class="result-row"><span>${labels.calendarStart || "Start"}</span><strong>${r.calendar_summary?.start_date || "—"}</strong></div>
+      ` : isTechRecheck ? `
+      <div class="result-notify result-notify-${escapeTaskHtml(r.level || "info")}">${escapeTaskHtml(r.notification || "")}</div>
+      <div class="result-row"><span>${labels.technicalRecheckDone || "Marked done"}</span><strong>${r.marked_done ?? 0}</strong></div>
+      <div class="result-row"><span>${labels.technicalRecheckResolved || "Resolved"}</span><strong>${r.resolved ?? 0}</strong></div>
+      <div class="result-row"><span>${labels.technicalRecheckStillOpen || "Still open"}</span><strong>${r.still_open ?? 0}</strong></div>
+      ${(r.still_open_items || []).length ? `<ul class="audit-diff-list">${(r.still_open_items || []).slice(0, 40).map((it) =>
+        `<li><strong>${escapeTaskHtml(it.title || it.issue_id || "")}</strong><br/><span class="muted">${escapeTaskHtml(it.url || "")}</span></li>`
+      ).join("")}</ul>` : ""}
       ` : isTechAudit ? `
       <div class="result-row"><span>${labels.technicalAuditScore || "Score"}</span><strong>${r.score ?? "—"} / 100</strong></div>
       <div class="result-row"><span>Pages</span><strong>${r.pages_ok || 0} / ${r.pages_checked || 0}</strong></div>
@@ -340,7 +352,7 @@ function showTaskResult(labels, job) {
 
   const viewBox = document.getElementById("task-sitemap-view");
   if (viewBox) {
-    if (isCluster || isAudit || isIndex || isKnowledge || isTechAudit) {
+    if (isCluster || isAudit || isIndex || isKnowledge || isTechAudit || isTechRecheck) {
       viewBox.classList.add("hidden");
     } else if (r.sitemap_view && typeof renderSitemapViewPanel === "function") {
       viewBox.innerHTML = `<h3>${labels.sitemapFetchedTitle || "Sitemap fetched"}</h3>${renderSitemapViewPanel(r.sitemap_view, labels, lg)}`;
@@ -355,6 +367,12 @@ function showTaskResult(labels, job) {
       <h3>${labels.filesTitle || "Download files"}</h3>
       <p class="muted">${labels.filesHint || ""}</p>
       ${renderDownloadFiles(r.files, downloadLabel)}`;
+    exportsBox.classList.remove("hidden");
+  } else if (exportsBox && isTechRecheck && r.log?.download_url) {
+    exportsBox.innerHTML = `
+      <h3>${labels.filesTitle || "Download files"}</h3>
+      <p class="muted">${labels.filesHint || ""}</p>
+      ${typeof renderDownloadFiles === "function" ? renderDownloadFiles([r.log], downloadLabel) : ""}`;
     exportsBox.classList.remove("hidden");
   } else if (exportsBox && isAudit && r.suggestions) {
     const calQs = new URLSearchParams({ lang: lg });

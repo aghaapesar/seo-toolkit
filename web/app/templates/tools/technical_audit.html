@@ -95,6 +95,24 @@
     </form>
     <div id="ta-error" class="result-panel hidden" style="margin-top:1rem;"></div>
 
+    <section class="ta-recheck-panel" style="margin-top:1.75rem;">
+      <h3 class="section-title">{{ strings.technical_audit_recheck_title }}</h3>
+      <p class="muted field-hint">{{ strings.technical_audit_recheck_hint }}</p>
+      <form id="form-technical-recheck" class="stack-form">
+        <label>
+          {{ field_label(strings.technical_audit_recheck_file, strings.tip_technical_audit_recheck) }}
+          <input type="file" name="file" accept=".xlsx,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" required />
+        </label>
+        <label>
+          {{ field_label(strings.technical_audit_recheck_report_id, strings.tip_technical_audit_report_id) }}
+          <input type="text" name="report_id" id="ta-recheck-report-id"
+                 placeholder="audit_example-com_20260721_120000" dir="ltr" />
+        </label>
+        <button type="submit" class="btn btn-ghost" id="ta-recheck-submit">{{ strings.technical_audit_recheck_start }}</button>
+      </form>
+      <div id="ta-recheck-error" class="result-panel hidden" style="margin-top:1rem;"></div>
+    </section>
+
     <section style="margin-top:1.75rem;">
       <h3 class="section-title">{{ strings.technical_audit_reports }}</h3>
       <div id="ta-reports" class="ta-reports">
@@ -107,19 +125,17 @@
     <h3 class="panel-info-title">{% if lang == 'fa' %}چه چیزهایی بررسی می‌شود؟{% else %}What is checked{% endif %}</h3>
     <ol class="steps">
       {% if lang == 'fa' %}
-      <li>تشخیص خودکار CMS/استک (وردپرس، ووکامرس، شاپیفای، Next.js، لاراول و…) و ارائه راهکار اختصاصی همان پلتفرم</li>
-      <li>زیرساخت: HTTPS، ریدایرکت www، robots.txt، sitemap، صفحه 404</li>
-      <li>متا: Title و Description (نبود، تکرار، طول)، Canonical، noindex</li>
-      <li>ساختار: H1، alt تصاویر، viewport موبایل، زبان صفحه، Schema و Open Graph</li>
-      <li>سرعت و سلامت: زمان پاسخ، حجم HTML، Mixed Content، لینک‌های شکسته</li>
-      <li>خروجی: گزارش PDF فارسی با خلاصه مدیریتی و برنامه اقدام اولویت‌بندی‌شده</li>
+      <li>تشخیص خودکار CMS/استک و ارائه راهکار اختصاصی همان پلتفرم</li>
+      <li>زیرساخت، متا، ساختار، سرعت و لینک‌های شکسته</li>
+      <li>خروجی پایدار: PDF + اکسل فنی/محتوا/همه + پکیج ZIP (تاریخچه overwrite نمی‌شود)</li>
+      <li>در اکسل ستون وضعیت را تیک بزنید؛ ردیف انجام‌شده سبز می‌شود</li>
+      <li>پس از اصلاح، اکسل را آپلود کنید تا موارد باز دوباره چک و نوتیف شوند</li>
       {% else %}
-      <li>Auto CMS/stack detection (WordPress, WooCommerce, Shopify, Next.js, Laravel, …) with platform-specific fixes</li>
-      <li>Infrastructure: HTTPS, www redirect, robots.txt, sitemap, 404 page</li>
-      <li>Meta: title/description (missing, duplicate, length), canonical, noindex</li>
-      <li>Structure: H1, image alt, mobile viewport, lang, Schema, Open Graph</li>
-      <li>Speed & health: response time, HTML size, mixed content, broken links</li>
-      <li>Output: Persian PDF with executive summary and prioritized task plan</li>
+      <li>Auto CMS/stack detection with platform-specific fixes</li>
+      <li>Infrastructure, meta, structure, speed, and broken links</li>
+      <li>Durable outputs: PDF + technical/content/all Excels + ZIP package (history kept)</li>
+      <li>Tick the Status column in Excel; done rows turn green</li>
+      <li>Re-upload Excel after fixes to re-check open items and get notified</li>
       {% endif %}
     </ol>
   </aside>
@@ -132,17 +148,24 @@
     border: 1px solid var(--border, #333); border-radius: 12px; padding: 0.9rem 1rem;
     display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: space-between; align-items: center;
   }
-  .ta-report-meta { display: flex; flex-direction: column; gap: 0.2rem; }
+  .ta-report-meta { display: flex; flex-direction: column; gap: 0.2rem; flex: 1 1 220px; }
   .ta-report-site { font-weight: 600; font-size: 0.92rem; }
   .ta-report-sub { font-size: 0.8rem; color: var(--muted, #999); }
+  .ta-rid { font-size: 0.72rem; opacity: 0.85; }
   .ta-score {
     font-weight: 700; font-size: 1.15rem; padding: 0.3rem 0.7rem; border-radius: 10px;
   }
   .ta-score.good { background: rgba(52,211,153,.15); color:#6ee7b7; }
   .ta-score.mid { background: rgba(251,191,36,.15); color:#fcd34d; }
   .ta-score.bad { background: rgba(248,113,113,.15); color:#fca5a5; }
-  .ta-report-actions { display: flex; gap: 0.5rem; }
+  .ta-report-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; max-width: 100%; }
   .ta-sev { font-size: 0.75rem; }
+  .ta-recheck-panel {
+    border: 1px dashed var(--border, #444);
+    border-radius: 12px;
+    padding: 1rem 1.1rem 1.15rem;
+    background: var(--surface-2, rgba(255,255,255,0.03));
+  }
   .ta-branding {
     margin: 0.5rem 0 0.25rem;
     border: 1px solid var(--border, #333);
@@ -163,6 +186,15 @@
     gap: 0.75rem 1rem;
     margin-top: 0.75rem;
   }
+  .result-notify {
+    margin: 0.75rem 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    font-size: 0.92rem;
+  }
+  .result-notify-success { background: rgba(52,211,153,.15); color: #6ee7b7; }
+  .result-notify-warning { background: rgba(251,191,36,.15); color: #fcd34d; }
+  .result-notify-info { background: rgba(96,165,250,.15); color: #93c5fd; }
   @media (max-width: 720px) {
     .ta-branding-grid { grid-template-columns: 1fr; }
   }
@@ -173,6 +205,8 @@
     score: {{ strings.technical_audit_score | tojson }},
     pdf: {{ strings.technical_audit_download_pdf | tojson }},
     json: {{ strings.technical_audit_download_json | tojson }},
+    package: {{ strings.technical_audit_download_package | tojson }},
+    excel: {{ strings.technical_audit_download_excel | tojson }},
   };
 </script>
 <script src="/static/technical_audit.js?v={{ version }}"></script>

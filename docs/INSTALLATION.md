@@ -72,17 +72,18 @@ Open http://127.0.0.1:8000 — use **Projects** in the sidebar to create sites a
 12. Check **needs procurement** list sorted by priority (search volume + competition).
 13. Semantic matching groups variants like «جالیز» and «خرید بازی فکری جالیز» under the same product.
 
-### Technical Issues Check — Persian PDF (v4.8.0 – v4.12.0)
+### Technical Issues Check — Persian PDF (v4.8.0 – v4.13.0)
 
 1. Open **بررسی مشکلات فنی / Technical Issues Check** in the sidebar (login required).
 2. Select a project — **آدرس سایت‌مپ پروژه** is pre-filled from the project (e.g. `/blog/sitemap_index.xml`); the crawl stays in that folder scope.
 3. Choose sample size (10–5000 pages) **or check «کرال کامل همه صفحات سایت‌مپ»** to audit every URL from that sitemap.
 4. Expand **تنظیمات جلد و هدر گزارش PDF** to edit cover title, prepared-by, agency, page headers, and section headings.
 5. The tool auto-detects the CMS/stack (WordPress, Shopify, Next.js, Laravel, …) and adds platform-specific solutions to each issue.
-6. Watch progress on the task page; when done, download the **Persian PDF report** and JSON data.
-7. Previous reports are archived under `projects/{slug}/output/technical_audit/`.
+6. Watch progress on the task page; when done, download the **ZIP package** (PDF + JSON + Excels), or individual PDF / technical / content / all Excel files.
+7. In Excel, set **وضعیت** to `☑ انجام‌شده` for fixed rows (they turn green). Re-upload the file under **بررسی مجدد بعد از آپدیت اکسل** to re-scan open rows and get a notification for anything still broken.
+8. Previous reports stay under `projects/{slug}/output/technical_audit/` with unique timestamps (history is no longer overwritten).
 
-Requires `fpdf2` + `uharfbuzz` (in `requirements.txt`) and bundled Vazirmatn fonts in `assets/fonts/`.
+Requires `fpdf2` + `uharfbuzz` + `openpyxl` (in `requirements.txt`) and bundled Vazirmatn fonts in `assets/fonts/`.
 
 ### Internal Link Intelligence (Mode 11)
 

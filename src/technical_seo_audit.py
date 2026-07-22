@@ -473,7 +473,13 @@ class AuditIssue:
     sample_urls: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serialize for job result / JSON export."""
+        """
+        Serialize for job result / JSON / Excel export.
+
+        Output:
+            Full `urls` list for Excel workflows; `sample_urls` capped for PDF.
+        """
+        urls = list(self.sample_urls)
         return {
             "issue_id": self.issue_id,
             "severity": self.severity,
@@ -485,12 +491,20 @@ class AuditIssue:
             "owner": self.owner,
             "effort": self.effort,
             "count": self.count,
-            "sample_urls": self.sample_urls[:10],
+            "urls": urls,
+            "sample_urls": urls[:10],
         }
 
 
 def _make_issue(issue_id: str, count: int, sample_urls: List[str]) -> AuditIssue:
-    """Build AuditIssue from catalog entry."""
+    """
+    Build AuditIssue from catalog entry.
+
+    Input:
+        issue_id: Catalog key.
+        count: Affected URL count.
+        sample_urls: All affected URLs (kept in full for Excel export).
+    """
     meta = ISSUE_CATALOG[issue_id]
     return AuditIssue(
         issue_id=issue_id,
@@ -502,7 +516,7 @@ def _make_issue(issue_id: str, count: int, sample_urls: List[str]) -> AuditIssue
         owner=meta["owner"],
         effort=meta["effort"],
         count=count,
-        sample_urls=sample_urls[:10],
+        sample_urls=list(sample_urls),
     )
 
 

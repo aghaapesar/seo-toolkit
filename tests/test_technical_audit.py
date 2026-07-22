@@ -268,3 +268,64 @@ class TestPdf:
             result, tmp_path / "branded.pdf", branding=brand
         )
         assert out.is_file() and out.stat().st_size > 8_000
+
+
+class TestExcelAndPersistence:
+    """Excel trackers + unique report naming."""
+
+    def test_to_dict_keeps_all_urls(self):
+        urls = [f"https://example.com/p{i}" for i in range(15)]
+        data = _make_issue("title_missing", 15, urls).to_dict()
+        assert len(data["urls"]) == 15
+        assert len(data["sample_urls"]) == 10
+
+    def test_safe_report_stem_keeps_timestamp(self):
+        from web.app.services.technical_audit_service import _safe_report_stem
+
+        stem = _safe_report_stem("https://zitro.ir/blog", "20260721_154234")
+        assert stem == "audit_zitro-ir_20260721_154234"
+        assert ".ir_" not in stem
+
+    def test_generate_excels_split_by_owner(self, tmp_path: Path):
+        from src.seo_audit_excel import (
+            STATUS_DONE,
+            STATUS_OPEN,
+            generate_audit_excels,
+            parse_status_workbook,
+        )
+
+        issues = [
+            _make_issue(
+                "page_broken",
+                2,
+                ["https://example.com/a", "https://example.com/b"],
+            ).to_dict(),
+            _make_issue(
+                "title_missing",
+                1,
+                ["https://example.com/c"],
+            ).to_dict(),
+        ]
+        result = {
+            "site_url": "https://example.com",
+            "issues": issues,
+        }
+        files = generate_audit_excels(result, tmp_path, "audit_example-com_20260721_120000")
+        assert "technical" in files and files["technical"].is_file()
+        assert "content" in files and files["content"].is_file()
+        assert "all" in files and files["all"].is_file()
+
+        rid, rows = parse_status_workbook(files["all"])
+        assert rid == "audit_example-com_20260721_120000"
+        assert len(rows) == 3
+        assert all(r["status"] == STATUS_OPEN for r in rows)
+
+        # Mark one done and ensure parser detects it
+        from openpyxl import load_workbook
+
+        wb = load_workbook(files["all"])
+        ws = wb["پیگیری مشکلات"]
+        ws.cell(row=2, column=1, value=STATUS_DONE)
+        wb.save(files["all"])
+        _rid, rows2 = parse_status_workbook(files["all"])
+        assert sum(1 for r in rows2 if r["is_done"]) == 1
