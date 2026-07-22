@@ -1,4 +1,4 @@
-# Seo Toolkit v4.13.0
+# Seo Toolkit v4.14.1
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -62,6 +62,14 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 - Sidebar **System → وضعیت سرویس‌ها**: live health for app, DB, GapGPT network, AI models
 - 24h uptime history (SQLite) with sparklines; refresh / auto-poll
 - API: `/api/v1/services/status`, `/api/v1/services/history`
+
+### Knowledge Export — RAG standard output (v4.14.1)
+- MD files follow [`docs/RAG_CONTENT_STANDARD.md`](docs/RAG_CONTENT_STANDARD.md): `url`+`title` frontmatter + product sample sections
+
+### Knowledge Export — RAG packages & re-index flags (v4.14.0)
+- Product MD follows the official RAG content standard; missing specs filled from foreign name + LLM knowledge (tagged)
+- One product never spans two files; each run produces ZIP packages (`*_all.zip` / `*_changed.zip`)
+- Changed pages flagged for selective RAG re-index (select / ZIP / mark re-indexed)
 
 ### Knowledge Exporter (v4.6.0) — per-URL RAG + LLM + registry
 - **One `.md` per URL**: `pages/{page_type}/{slug}.md` with RAG frontmatter

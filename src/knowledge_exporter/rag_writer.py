@@ -69,33 +69,37 @@ class RagWriter:
 
     def render_rag_document(self, doc: RagPageDocument) -> str:
         """
-        Render RAG-standard Markdown with YAML frontmatter.
+        Render RAG-standard Markdown with minimal YAML frontmatter.
 
-        Output:
-            Full file content (UTF-8).
+        Per docs/RAG_CONTENT_STANDARD.md §2 / §7 sample:
+            ---
+            url: ...
+            title: "..."
+            ---
+
+            # Title
+            body...
+
+        Only `url` and `title` are emitted so the chatbot RAG indexer
+        attaches exact name + real link to every chunk.
         """
-        title_fm = (doc.title or "").replace('"', '\\"')
-        desc_fm = (doc.description or "").replace('"', '\\"')
+        title = (doc.title or "").strip() or "بدون عنوان"
+        title_fm = title.replace('"', '\\"')
         lines = [
             "---",
             f"url: {doc.url}",
             f'title: "{title_fm}"',
-            f"page_type: {doc.page_type}",
-            f"lang: {doc.lang or 'fa'}",
-            f"crawled_at: {doc.crawled_at}",
+            "---",
+            "",
         ]
-        if doc.sitemap_lastmod:
-            lines.append(f"sitemap_lastmod: {doc.sitemap_lastmod}")
-        if doc.content_hash:
-            lines.append(f"content_hash: {doc.content_hash}")
-        lines.append(f"source: knowledge_export")
-        if desc_fm:
-            lines.append(f'description: "{desc_fm}"')
-        lines.append("---")
-        lines.append("")
-        body = doc.markdown_body.strip()
+        body = (doc.markdown_body or "").strip()
+        # Drop accidental frontmatter from LLM body
+        if body.startswith("---"):
+            parts = body.split("---", 2)
+            if len(parts) >= 3:
+                body = parts[2].strip()
         if not body.startswith("#"):
-            body = f"# {doc.title}\n\n{body}"
+            body = f"# {title}\n\n{body}"
         return "\n".join(lines) + "\n" + body + "\n"
 
     def write_page_file(self, doc: RagPageDocument) -> Optional[str]:

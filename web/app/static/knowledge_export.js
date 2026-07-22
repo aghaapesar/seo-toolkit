@@ -189,19 +189,44 @@ function initKnowledgeExportForm(lang) {
       if (filesBox && data.files?.length) {
         const dlLabel = typeof t === "function" ? t(lang, "download") : "Download";
         const pageFiles = data.files.filter((f) => (f.path || "").includes("/pages/"));
-        const otherFiles = data.files.filter((f) => !(f.path || "").includes("/pages/"));
+        const packageFiles = data.files.filter((f) => (f.status || "") === "package" || (f.path || "").includes("/packages/"));
+        const otherFiles = data.files.filter(
+          (f) => !(f.path || "").includes("/pages/") && (f.status || "") !== "package" && !(f.path || "").includes("/packages/")
+        );
+        const reindexCount = data.needs_reindex_count || pageFiles.filter((f) => f.needs_reindex).length;
         let html = `<h3>${tMsg("فایل‌های خروجی", "Export files")}</h3>`;
+        if (reindexCount) {
+          html += `<p class="ke-reindex-banner" style="margin:0.5rem 0;padding:0.6rem 0.8rem;border-radius:10px;background:rgba(251,191,36,.12);color:#fcd34d;">
+            ${tMsg(
+              `${reindexCount} فایل تغییر کرده و برای ایندکس مجدد RAG فلگ شده‌اند.`,
+              `${reindexCount} file(s) flagged for RAG re-index.`
+            )}
+          </p>`;
+        }
+        if (packageFiles.length) {
+          html += `<div class="ke-packages" style="margin-bottom:0.75rem;display:flex;flex-wrap:wrap;gap:0.4rem">`;
+          packageFiles.forEach((f) => {
+            html += `<a class="btn btn-primary btn-sm" href="${f.download_url}">${f.label || f.name}</a>`;
+          });
+          html += `</div>`;
+        }
         if (pageFiles.length) {
           html += `<div class="ke-file-toolbar" style="margin-bottom:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap">
+            <button type="button" class="btn btn-ghost btn-sm" id="ke-select-changed">${tMsg("فقط تغییرکرده‌ها", "Changed only")}</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="ke-select-all-files">${tMsg("انتخاب همه", "Select all")}</button>
             <button type="button" class="btn btn-ghost btn-sm" id="ke-zip-selected">${tMsg("ZIP انتخاب‌شده", "ZIP selected")}</button>
+            <button type="button" class="btn btn-ghost btn-sm" id="ke-mark-reindexed">${tMsg("علامت ایندکس‌شده", "Mark re-indexed")}</button>
           </div>`;
           html += `<div class="ke-page-files" style="max-height:280px;overflow:auto">`;
           pageFiles.forEach((f) => {
+            const flag = f.needs_reindex
+              ? ` <span class="ke-flag-changed" title="${f.change_reason || ""}">${tMsg("تغییرکرده", "CHANGED")}</span>`
+              : "";
             const status = f.status ? ` <span class="muted">[${f.status}]</span>` : "";
             const dl = `${f.download_url}&project_slug=${encodeURIComponent(slug)}`;
-            html += `<label class="ke-file-row" style="display:flex;gap:0.5rem;align-items:center;padding:0.25rem 0">
-              <input type="checkbox" class="ke-file-cb" data-path="${f.path}" checked />
-              <a href="${dl}">${f.label || f.name}</a>${status}
+            html += `<label class="ke-file-row" style="display:flex;gap:0.5rem;align-items:center;padding:0.25rem 0" data-changed="${f.needs_reindex ? "1" : "0"}">
+              <input type="checkbox" class="ke-file-cb" data-path="${f.path}" data-changed="${f.needs_reindex ? "1" : "0"}" ${f.needs_reindex ? "checked" : ""} />
+              <a href="${dl}">${f.label || f.name}</a>${flag}${status}
             </label>`;
           });
           html += `</div>`;
@@ -216,6 +241,17 @@ function initKnowledgeExportForm(lang) {
         }
         filesBox.innerHTML = html;
         filesBox.classList.remove("hidden");
+
+        document.getElementById("ke-select-changed")?.addEventListener("click", () => {
+          filesBox.querySelectorAll(".ke-file-cb").forEach((cb) => {
+            cb.checked = cb.dataset.changed === "1";
+          });
+        });
+        document.getElementById("ke-select-all-files")?.addEventListener("click", () => {
+          filesBox.querySelectorAll(".ke-file-cb").forEach((cb) => {
+            cb.checked = true;
+          });
+        });
         document.getElementById("ke-zip-selected")?.addEventListener("click", async () => {
           const paths = Array.from(filesBox.querySelectorAll(".ke-file-cb:checked")).map((cb) => cb.dataset.path);
           if (!paths.length) {
@@ -236,8 +272,34 @@ function initKnowledgeExportForm(lang) {
             const blob = await res.blob();
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = "knowledge_export.zip";
+            a.download = "knowledge_export_selected.zip";
             a.click();
+          } catch (err) {
+            if (typeof toast === "function") toast(err.message, "error");
+          }
+        });
+        document.getElementById("ke-mark-reindexed")?.addEventListener("click", async () => {
+          const paths = Array.from(filesBox.querySelectorAll(".ke-file-cb:checked")).map((cb) => cb.dataset.path);
+          if (!paths.length) {
+            if (typeof toast === "function") toast(tMsg("فایلی انتخاب نشده", "No files selected"), "error");
+            return;
+          }
+          try {
+            const res = await fetch("/api/v1/knowledge-export/mark-reindexed", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "same-origin",
+              body: JSON.stringify({ project_slug: slug, paths }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.detail || res.statusText);
+            if (typeof toast === "function") {
+              toast(
+                tMsg(`${data.cleared} فایل از فلگ ایندکس خارج شد`, `Cleared re-index flag on ${data.cleared} file(s)`),
+                "success"
+              );
+            }
+            await renderDashboard(slug);
           } catch (err) {
             if (typeof toast === "function") toast(err.message, "error");
           }
@@ -305,8 +367,18 @@ function initKnowledgeExportForm(lang) {
         if (data.staleness) {
           const st = data.staleness;
           staleHtml = tMsg(
-            `<br/><span class="muted">جدید: ${st.new_count} · قدیمی: ${st.stale_count} · بدون تغییر: ${st.unchanged_count}</span>`,
-            `<br/><span class="muted">New: ${st.new_count} · Stale: ${st.stale_count} · Unchanged: ${st.unchanged_count}</span>`
+            `<br/><span class="muted">جدید: ${st.new_count} · قدیمی/آپدیت‌شده: ${st.stale_count} · بدون تغییر: ${st.unchanged_count}` +
+              (st.needs_reindex_count != null ? ` · فلگ ایندکس: ${st.needs_reindex_count}` : "") +
+              `</span>` +
+              (st.stale_count > 0
+                ? `<br/><strong style="color:#fcd34d">محتوای ${st.stale_count} URL در سایت‌مپ آپدیت شده — همان فایل md قبلی را دوباره بسازید و فقط تغییرکرده‌ها را به RAG بفرستید.</strong>`
+                : ""),
+            `<br/><span class="muted">New: ${st.new_count} · Stale: ${st.stale_count} · Unchanged: ${st.unchanged_count}` +
+              (st.needs_reindex_count != null ? ` · Re-index flags: ${st.needs_reindex_count}` : "") +
+              `</span>` +
+              (st.stale_count > 0
+                ? `<br/><strong style="color:#fcd34d">${st.stale_count} URL(s) updated in sitemap — re-export and send only changed MD to RAG.</strong>`
+                : "")
           );
         }
         segmentSummary.innerHTML = tMsg(

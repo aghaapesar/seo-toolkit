@@ -19,7 +19,10 @@ from typing import Any, Dict, List, Literal, Optional
 
 logger = logging.getLogger(__name__)
 
-DOCUMENT_SEPARATOR = "\n\n---\n\n"
+# Join complete documents with blank lines only.
+# Do NOT insert a lone `---` — that would look like empty frontmatter and
+# break RAG section splitting (standard §2 splits on metadata blocks).
+DOCUMENT_SEPARATOR = "\n\n"
 PartStatus = Literal["success", "failed", "duplicate", "empty", "cached"]
 
 
@@ -39,24 +42,22 @@ class PageDocument:
 
     def render(self) -> str:
         """
-        Render full Markdown document with YAML frontmatter.
+        Render full Markdown document with RAG-standard frontmatter.
 
-        Output:
-            Single document string for RAG ingestion.
+        Per docs/RAG_CONTENT_STANDARD.md: only `url` + `title` in metadata.
         """
-        desc = self.description.replace('"', '\\"')
-        title_fm = self.title.replace('"', '\\"')
+        title = (self.title or "").strip() or "بدون عنوان"
+        title_fm = title.replace('"', '\\"')
         frontmatter = (
             "---\n"
             f"url: {self.url}\n"
             f'title: "{title_fm}"\n'
-            f'description: "{desc}"\n'
-            f"crawled_at: {self.crawled_at}\n"
-            f"lang: {self.lang}\n"
             "---\n\n"
         )
-        heading = f"# {self.title}\n\n"
-        return frontmatter + heading + self.markdown_body.strip()
+        body = (self.markdown_body or "").strip()
+        if not body.startswith("#"):
+            body = f"# {title}\n\n{body}"
+        return frontmatter + body
 
 
 @dataclass
@@ -64,7 +65,9 @@ class PartWriter:
     """
     Split documents into size/page-limited part files.
 
-    Never splits a single document across parts.
+    Critical: never splits a single document / product across parts.
+    If one product exceeds max_part_bytes alone, it still occupies its own
+    complete part file so RAG never sees a truncated product mid-document.
     """
 
     output_dir: Path

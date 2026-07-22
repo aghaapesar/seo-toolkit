@@ -113,7 +113,7 @@ def test_url_to_slug_and_noindex():
 
 
 def test_rag_writer_per_url_files():
-    """RagWriter writes pages/{type}/{slug}.md with frontmatter."""
+    """RagWriter writes pages/{type}/{slug}.md with standard url+title frontmatter."""
     from src.knowledge_exporter.rag_writer import RagPageDocument, RagWriter
 
     with tempfile.TemporaryDirectory() as tmp:
@@ -136,8 +136,60 @@ def test_rag_writer_per_url_files():
         assert len(result["written_paths"]) == 1
         path = out / result["written_paths"][0]
         text = path.read_text(encoding="utf-8")
-        assert "page_type: product" in text
-        assert "sitemap_lastmod: 2026-01-01" in text
-        assert "content_hash: abc123" in text
+        # Official RAG standard §2 / §7: only url + title in frontmatter
+        assert text.startswith("---\n")
+        assert 'url: https://example.com/product/foo' in text
+        assert 'title: "Foo Product"' in text
+        assert "page_type:" not in text.split("---", 2)[1]
+        assert "content_hash:" not in text.split("---", 2)[1]
+        assert "# Foo Product" in text
         index = json.loads((out / "index.json").read_text(encoding="utf-8"))
         assert index["format"] == "rag_per_url"
+
+
+def test_cleanup_patterns_strip_site_chrome():
+    """Standard §6 cleanup patterns remove Sargarmia-style boilerplate."""
+    from src.knowledge_exporter.rag_ai import apply_cleanup_patterns
+
+    raw = (
+        "متن اصلی محصول اینجا است.\n"
+        "از 12 رای\n"
+        "برچسبها : بازی فکری, کارتی\n"
+        "بخشها : رومیزی\n"
+    )
+    cleaned = apply_cleanup_patterns(raw)
+    assert "متن اصلی محصول" in cleaned
+    assert "از 12 رای" not in cleaned
+    assert "برچسبها" not in cleaned
+
+
+def test_extract_foreign_name_from_title():
+    """Latin/foreign name is pulled from Persian product titles."""
+    from src.knowledge_exporter.rag_ai import extract_foreign_name
+
+    assert "Jaliz" in extract_foreign_name("بازی فکری جالیز - Jaliz Board Game")
+    assert extract_foreign_name("فقط فارسی") == ""
+
+
+def test_part_writer_keeps_oversized_doc_intact():
+    """A single large product document is never split across part files."""
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        writer = PartWriter(output_dir=out, max_part_bytes=200, max_pages_per_part=50)
+        big = "متن محصول کامل " * 80
+        docs = [
+            PageDocument(
+                url="https://example.com/product/big",
+                title="محصول بزرگ",
+                description="",
+                lang="fa",
+                markdown_body=big,
+                crawled_at="2026-07-22T12:00:00+00:00",
+                status="success",
+            )
+        ]
+        parts = writer.write_all(docs)
+        assert len(parts) == 1
+        content = (out / parts[0]).read_text(encoding="utf-8")
+        assert "url: https://example.com/product/big" in content
+        assert big[:40] in content

@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from web.app.deps.auth import require_user
 from web.app.services.auth_service import User, user_can_access_project
 from web.app.services.job_manager import job_manager
-from web.app.services.knowledge_export_store import list_pages
+from web.app.services.knowledge_export_store import list_pages, mark_reindexed
 from web.app.services.knowledge_export_service import (
     analyze_project_sitemap,
     build_zip_archive,
@@ -37,6 +37,14 @@ class ZipDownloadRequest(BaseModel):
 
     project_slug: str
     paths: list[str]
+
+
+class MarkReindexedRequest(BaseModel):
+    """Clear needs_reindex after sending files to RAG."""
+
+    project_slug: str
+    paths: list[str] = []
+    all_flagged: bool = False
 
 
 def _assert_access(user: User, project_slug: str) -> None:
@@ -251,6 +259,26 @@ async def download_zip(payload: ZipDownloadRequest, user: User = Depends(require
     )
 
 
+@router.post("/mark-reindexed")
+def mark_pages_reindexed(payload: MarkReindexedRequest, user: User = Depends(require_user)):
+    """
+    Clear «needs_reindex» flags after user uploaded changed MD to RAG.
+
+    Input:
+        paths: Relative page paths, or all_flagged=true for every flagged row.
+    """
+    slug = payload.project_slug.strip()
+    if not slug:
+        raise HTTPException(status_code=400, detail="project_slug required")
+    _assert_access(user, slug)
+    if not payload.all_flagged and not payload.paths:
+        raise HTTPException(status_code=400, detail="paths or all_flagged required")
+    cleared = mark_reindexed(
+        slug, relative_paths=payload.paths, all_flagged=payload.all_flagged
+    )
+    return {"cleared": cleared, "project_slug": slug}
+
+
 @router.get("/download")
 def download_export_file(
     path: str,
@@ -271,8 +299,13 @@ def download_export_file(
         file_path = resolve_export_download(path, project_slug=slug)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    media = (
+        "application/zip"
+        if file_path.suffix.lower() == ".zip"
+        else "application/octet-stream"
+    )
     return FileResponse(
         path=str(file_path),
         filename=file_path.name,
-        media_type="application/octet-stream",
+        media_type=media,
     )

@@ -94,6 +94,8 @@ Requires `fpdf2` + `uharfbuzz` + `openpyxl` (in `requirements.txt`) and bundled 
 
 ### Knowledge Exporter (RAG Markdown)
 
+Output format follows [`docs/RAG_CONTENT_STANDARD.md`](RAG_CONTENT_STANDARD.md) (frontmatter `url`/`title`, product sections per the official sample).
+
 Export sitemap pages to Markdown parts for chatbot Knowledge Base:
 
 ```bash
@@ -126,6 +128,12 @@ Options: `--include-pattern`, `--exclude-pattern`, `--urls-file`, `--rate-limit`
 3. Select patterns (checkboxes); each row shows pattern, type badge, sample titles.
 4. **Phase 2** — pick AI model, test connection, set filters (blog, noindex, product sample limit) → **Start export**.
 5. Download individual `pages/…` files, ZIP selection, or legacy `knowledge_part_*.md` from the tool page.
+
+
+8. After export, download **پکیج کامل** and/or **پکیج تغییرکرده‌ها** under `packages/`.
+9. On later sitemap analyze, stale/updated URLs are flagged; use **فقط تغییرکرده‌ها** then ZIP / send to RAG; click **علامت ایندکس‌شده** when done.
+10. Each product is one complete `pages/product/{slug}.md` — never split mid-product.
+
 
 ### Service status monitoring
 

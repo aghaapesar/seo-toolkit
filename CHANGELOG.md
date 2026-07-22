@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.14.1 (2026-07-22)
+
+### Knowledge Export — align MD output with official RAG content standard
+- Copied operator standard to `docs/RAG_CONTENT_STANDARD.md`
+- Exported files use **only** `url` + `title` frontmatter (sample §2/§7); no extra keys that confuse RAG chunking
+- Product body shape matches sample: H1 → intro prose → `## مشخصات کلی` → `## نحوه بازی` → `## سوالات متداول`
+- Applied standard §6 cleanup regexes (اشتراک‌گذاری / رای / برچسبها / …)
+- Part-file separator no longer inserts a lone `---` between documents (avoids empty metadata blocks)
+
+## v4.14.0 (2026-07-22)
+
+### Knowledge Export — RAG standard, packages, changed-file flags
+- LLM product prompt aligned with «استاندارد تهیه محتوا برای پایگاه دانش (RAG)»: H1 + مشخصات کلی + معرفی + نحوه بازی + FAQ
+- Missing specs filled from foreign/original product name via model knowledge, tagged «(تکمیل‌شده از دانش عمومی)»; price/stock never invented
+- One product always stays in one complete `.md` (per-URL files + part writer never mid-splits a document)
+- Auto ZIP packages after each run: `packages/knowledge_export_*_all.zip` and `*_changed.zip` for RAG re-index
+- Registry flags `needs_reindex` / `change_reason` when sitemap lastmod or content hash changes; UI: select changed-only, ZIP, mark re-indexed
+- Analyze persists stale flags and warns when MD files need rebuild
+
 ## v4.13.0 (2026-07-21)
 
 ### Technical Issues Check — durable reports + Excel trackers + re-check

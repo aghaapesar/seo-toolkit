@@ -414,6 +414,9 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
             status TEXT NOT NULL DEFAULT 'new',
             exported_at TEXT,
             first_downloaded_at TEXT,
+            needs_reindex INTEGER NOT NULL DEFAULT 0,
+            change_reason TEXT NOT NULL DEFAULT '',
+            rag_indexed_at TEXT,
             error TEXT,
             updated_at TEXT NOT NULL,
             UNIQUE(project_slug, url)
@@ -425,6 +428,24 @@ def _migrate_schema(conn: sqlite3.Connection) -> None:
     )
     conn.execute(
         "CREATE INDEX IF NOT EXISTS idx_ke_pages_status ON knowledge_export_pages(project_slug, status)"
+    )
+    ke_cols = _table_columns(conn, "knowledge_export_pages")
+    if _table_exists(conn, "knowledge_export_pages"):
+        if "needs_reindex" not in ke_cols:
+            conn.execute(
+                "ALTER TABLE knowledge_export_pages ADD COLUMN needs_reindex INTEGER NOT NULL DEFAULT 0"
+            )
+        if "change_reason" not in ke_cols:
+            conn.execute(
+                "ALTER TABLE knowledge_export_pages ADD COLUMN change_reason TEXT NOT NULL DEFAULT ''"
+            )
+        if "rag_indexed_at" not in ke_cols:
+            conn.execute(
+                "ALTER TABLE knowledge_export_pages ADD COLUMN rag_indexed_at TEXT"
+            )
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ke_pages_reindex "
+        "ON knowledge_export_pages(project_slug, needs_reindex)"
     )
 
     # Migrate legacy Kanban statuses (5 columns → 3 columns).
