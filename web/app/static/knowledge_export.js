@@ -182,63 +182,95 @@ function initKnowledgeExportForm(lang) {
         ? new Date(latest.generated_at).toLocaleString(lang === "fa" ? "fa-IR" : "en")
         : "—";
       statsBox.innerHTML = tMsg(
-        `<strong>${total}</strong> صفحه · <strong>${ragFiles}</strong> فایل RAG · <strong>${parts}</strong> پارت<br/><span class="muted">آخرین خروجی: ${generated}</span>`,
-        `<strong>${total}</strong> pages · <strong>${ragFiles}</strong> RAG files · <strong>${parts}</strong> parts<br/><span class="muted">Last export: ${generated}</span>`
+        `<strong>${total}</strong> صفحه · <strong>${parts}</strong> پارت چندمحصولی · <strong>${ragFiles}</strong> فایل نوشته‌شده<br/><span class="muted">آخرین خروجی: ${generated}</span>`,
+        `<strong>${total}</strong> pages · <strong>${parts}</strong> multi-product parts · <strong>${ragFiles}</strong> files written<br/><span class="muted">Last export: ${generated}</span>`
       );
 
       if (filesBox && data.files?.length) {
-        const dlLabel = typeof t === "function" ? t(lang, "download") : "Download";
-        const pageFiles = data.files.filter((f) => (f.path || "").includes("/pages/"));
-        const packageFiles = data.files.filter((f) => (f.status || "") === "package" || (f.path || "").includes("/packages/"));
-        const otherFiles = data.files.filter(
-          (f) => !(f.path || "").includes("/pages/") && (f.status || "") !== "package" && !(f.path || "").includes("/packages/")
+        const packageFiles = data.files.filter(
+          (f) => f.kind === "package" || f.kind === "package_changed" || f.status === "package" || (f.path || "").includes("/packages/")
         );
-        const reindexCount = data.needs_reindex_count || pageFiles.filter((f) => f.needs_reindex).length;
-        let html = `<h3>${tMsg("فایل‌های خروجی", "Export files")}</h3>`;
+        const partFiles = data.files.filter(
+          (f) => f.kind === "part" || ((f.name || "").startsWith("knowledge_part_") && (f.name || "").endsWith(".md"))
+        );
+        const indexFiles = data.files.filter((f) => f.kind === "index" || f.name === "index.json");
+        const pageFiles = data.files.filter((f) => f.kind === "page" || (f.path || "").includes("/pages/"));
+        const reindexCount =
+          data.needs_reindex_count ||
+          partFiles.filter((f) => f.needs_reindex).length ||
+          pageFiles.filter((f) => f.needs_reindex).length;
+
+        let html = `<h3>${tMsg("دانلود پایگاه دانش", "Knowledge base download")}</h3>`;
+        html += `<p class="muted" style="margin:0.25rem 0 0.75rem">
+          ${tMsg(
+            "خروجی اصلی: چند محصول در هر knowledge_part_XX.md (هر محصول کامل در همان فایل).",
+            "Primary output: many products per knowledge_part_XX.md (each product finishes in that file)."
+          )}
+        </p>`;
+
         if (reindexCount) {
           html += `<p class="ke-reindex-banner" style="margin:0.5rem 0;padding:0.6rem 0.8rem;border-radius:10px;background:rgba(251,191,36,.12);color:#fcd34d;">
             ${tMsg(
-              `${reindexCount} فایل تغییر کرده و برای ایندکس مجدد RAG فلگ شده‌اند.`,
-              `${reindexCount} file(s) flagged for RAG re-index.`
+              `${reindexCount} موضوع تغییر کرده — پکیج تغییرکرده‌ها یا پارت‌های فلگ‌شده را برای ایندکس مجدد بفرستید.`,
+              `${reindexCount} topic(s) changed — upload the changed package / flagged parts to RAG.`
             )}
           </p>`;
         }
+
         if (packageFiles.length) {
-          html += `<div class="ke-packages" style="margin-bottom:0.75rem;display:flex;flex-wrap:wrap;gap:0.4rem">`;
+          html += `<div class="ke-packages" style="margin-bottom:1rem;display:flex;flex-direction:column;gap:0.5rem">`;
           packageFiles.forEach((f) => {
-            html += `<a class="btn btn-primary btn-sm" href="${f.download_url}">${f.label || f.name}</a>`;
+            const isChanged = f.kind === "package_changed" || (f.name || "").includes("_changed");
+            const btnClass = isChanged ? "btn btn-secondary" : "btn btn-primary";
+            const hint = isChanged
+              ? tMsg("فقط پارت‌های تغییرکرده برای ایندکس مجدد", "Changed parts only — for re-index")
+              : tMsg("کل دانش (پارت‌ها + index)", "Full knowledge (parts + index)");
+            html += `<a class="${btnClass}" href="${f.download_url}" style="justify-content:flex-start;text-align:start">
+              <span style="font-weight:600">${f.label || f.name}</span>
+              <span class="muted" style="margin-inline-start:0.5rem;font-size:0.85em">${hint}</span>
+            </a>`;
           });
           html += `</div>`;
         }
-        if (pageFiles.length) {
+
+        const selectable = [...partFiles, ...indexFiles];
+        if (selectable.length) {
+          html += `<h4 style="margin:0.75rem 0 0.35rem">${tMsg("فایل‌های پارت (چندمحصولی)", "Part files (multi-product)")}</h4>`;
           html += `<div class="ke-file-toolbar" style="margin-bottom:0.5rem;display:flex;gap:0.5rem;flex-wrap:wrap">
             <button type="button" class="btn btn-ghost btn-sm" id="ke-select-changed">${tMsg("فقط تغییرکرده‌ها", "Changed only")}</button>
             <button type="button" class="btn btn-ghost btn-sm" id="ke-select-all-files">${tMsg("انتخاب همه", "Select all")}</button>
             <button type="button" class="btn btn-ghost btn-sm" id="ke-zip-selected">${tMsg("ZIP انتخاب‌شده", "ZIP selected")}</button>
             <button type="button" class="btn btn-ghost btn-sm" id="ke-mark-reindexed">${tMsg("علامت ایندکس‌شده", "Mark re-indexed")}</button>
           </div>`;
-          html += `<div class="ke-page-files" style="max-height:280px;overflow:auto">`;
-          pageFiles.forEach((f) => {
+          html += `<div class="ke-part-files" style="max-height:320px;overflow:auto">`;
+          selectable.forEach((f) => {
+            const topics = f.topic_count ? ` · ${f.topic_count} ${tMsg("محصول", "topics")}` : "";
             const flag = f.needs_reindex
               ? ` <span class="ke-flag-changed" title="${f.change_reason || ""}">${tMsg("تغییرکرده", "CHANGED")}</span>`
               : "";
-            const status = f.status ? ` <span class="muted">[${f.status}]</span>` : "";
             const dl = `${f.download_url}&project_slug=${encodeURIComponent(slug)}`;
-            html += `<label class="ke-file-row" style="display:flex;gap:0.5rem;align-items:center;padding:0.25rem 0" data-changed="${f.needs_reindex ? "1" : "0"}">
+            html += `<label class="ke-file-row" style="display:flex;gap:0.5rem;align-items:center;padding:0.35rem 0;border-bottom:1px solid rgba(127,127,127,.15)" data-changed="${f.needs_reindex ? "1" : "0"}">
               <input type="checkbox" class="ke-file-cb" data-path="${f.path}" data-changed="${f.needs_reindex ? "1" : "0"}" ${f.needs_reindex ? "checked" : ""} />
-              <a href="${dl}">${f.label || f.name}</a>${flag}${status}
+              <a href="${dl}">${f.label || f.name}</a>${topics}${flag}
             </label>`;
           });
           html += `</div>`;
         }
-        if (otherFiles.length) {
-          html +=
-            typeof renderDownloadFiles === "function"
-              ? renderDownloadFiles(otherFiles, dlLabel)
-              : otherFiles
-                  .map((f) => `<a class="btn btn-ghost btn-sm" href="${f.download_url}">${f.label || f.name}</a>`)
-                  .join(" ");
+
+        if (pageFiles.length) {
+          html += `<details class="ke-optional-pages" style="margin-top:1rem">
+            <summary style="cursor:pointer">${tMsg(`فایل‌های اختیاری per-URL (${pageFiles.length})`, `Optional per-URL files (${pageFiles.length})`)}</summary>
+            <div class="ke-page-files" style="max-height:200px;overflow:auto;margin-top:0.5rem">`;
+          pageFiles.slice(0, 200).forEach((f) => {
+            const dl = `${f.download_url}&project_slug=${encodeURIComponent(slug)}`;
+            html += `<div style="padding:0.2rem 0"><a href="${dl}">${f.label || f.name}</a></div>`;
+          });
+          if (pageFiles.length > 200) {
+            html += `<p class="muted">${tMsg("… و موارد بیشتر در پکیج ZIP", "… more inside the ZIP package")}</p>`;
+          }
+          html += `</div></details>`;
         }
+
         filesBox.innerHTML = html;
         filesBox.classList.remove("hidden");
 
@@ -435,7 +467,7 @@ function initKnowledgeExportForm(lang) {
     }
     const fd = new FormData(form);
     // Unchecked checkboxes are omitted — set explicit false for toggles
-    ["include_blog", "include_noindex", "write_parts", "skip_unchanged"].forEach((name) => {
+    ["include_blog", "include_noindex", "write_parts", "write_per_url", "skip_unchanged"].forEach((name) => {
       const el = form.querySelector(`[name="${name}"]`);
       if (el && el.type === "checkbox" && !el.checked) {
         fd.set(name, "false");

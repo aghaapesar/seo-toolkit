@@ -1,31 +1,33 @@
 """
-Per-URL RAG Markdown writer — {page_type}/{slug}.md layout.
+Per-topic RAG Markdown writer — multi-product part files (primary).
 
 Input:
     Structured page documents with metadata.
 
 Output:
-    Individual UTF-8 Markdown files under pages/ directory.
+    knowledge_part_XX.md bundles (many products per file; never mid-splits
+    one product) + index.json. Optional per-URL files under pages/ when enabled.
+
+Format per docs/RAG_CONTENT_STANDARD.md §2 (url + title frontmatter per topic).
 """
 
 from __future__ import annotations
 
 import json
 import logging
-import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-from src.knowledge_exporter.part_writer import DOCUMENT_SEPARATOR, PageDocument, PartWriter
+from src.knowledge_exporter.part_writer import PageDocument, PartWriter
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class RagPageDocument(PageDocument):
-    """Extended page document for per-URL RAG export."""
+    """Extended page document for RAG export."""
 
     page_type: str = "other"
     slug: str = ""
@@ -38,16 +40,18 @@ class RagPageDocument(PageDocument):
 @dataclass
 class RagWriter:
     """
-    Write per-URL Markdown files and optional legacy part bundles.
+    Write multi-product part files (default) and optional per-URL copies.
 
     Input:
         output_dir: Project knowledge_export folder.
-        pages_subdir: Relative folder for per-URL files (default pages).
+        write_parts: Write knowledge_part_*.md (default True — primary output).
+        write_per_url: Also write pages/{type}/{slug}.md (default False).
     """
 
     output_dir: Path
     pages_subdir: str = "pages"
     write_parts: bool = True
+    write_per_url: bool = False
     max_part_bytes: int = 500 * 1024
     max_pages_per_part: int = 50
 
@@ -69,19 +73,7 @@ class RagWriter:
 
     def render_rag_document(self, doc: RagPageDocument) -> str:
         """
-        Render RAG-standard Markdown with minimal YAML frontmatter.
-
-        Per docs/RAG_CONTENT_STANDARD.md §2 / §7 sample:
-            ---
-            url: ...
-            title: "..."
-            ---
-
-            # Title
-            body...
-
-        Only `url` and `title` are emitted so the chatbot RAG indexer
-        attaches exact name + real link to every chunk.
+        Render one topic with RAG-standard frontmatter (url + title only).
         """
         title = (doc.title or "").strip() or "بدون عنوان"
         title_fm = title.replace('"', '\\"')
@@ -93,7 +85,6 @@ class RagWriter:
             "",
         ]
         body = (doc.markdown_body or "").strip()
-        # Drop accidental frontmatter from LLM body
         if body.startswith("---"):
             parts = body.split("---", 2)
             if len(parts) >= 3:
@@ -104,11 +95,13 @@ class RagWriter:
 
     def write_page_file(self, doc: RagPageDocument) -> Optional[str]:
         """
-        Write one page to {page_type}/{slug}.md.
+        Write one optional per-URL file under pages/.
 
         Output:
-            Repo-relative path string or None on skip.
+            Repo-relative path or None when skipped / write_per_url off.
         """
+        if not self.write_per_url:
+            return None
         if doc.status not in ("success", "cached") or not doc.markdown_body.strip():
             return None
 
@@ -121,7 +114,7 @@ class RagWriter:
         doc.slug = slug
         doc.relative_path = rel
         self.written_paths.append(rel)
-        logger.info("Wrote RAG page %s", rel)
+        logger.info("Wrote per-URL RAG page %s", rel)
         return rel
 
     def write_all(
@@ -129,24 +122,31 @@ class RagWriter:
         documents: List[RagPageDocument],
     ) -> Dict[str, Any]:
         """
-        Write per-URL files and optional part files + index.json.
+        Write part bundles (primary) and optional per-URL files + index.json.
 
         Output:
-            Summary dict with paths and index entries.
+            Summary with parts, written_paths, index_path.
+            Each product is wholly inside one part file (never split).
         """
         self.output_dir.mkdir(parents=True, exist_ok=True)
         index_entries: List[Dict[str, Any]] = []
 
         exportable: List[RagPageDocument] = []
         for doc in documents:
-            rel = self.write_page_file(doc)
+            if doc.status in ("success", "cached") and (doc.markdown_body or "").strip():
+                if not doc.slug:
+                    doc.slug = self._unique_slug(doc.page_type or "other", doc.slug or "page")
+                exportable.append(doc)
+                # Optional per-URL copy
+                self.write_page_file(doc)
+
             entry: Dict[str, Any] = {
                 "url": doc.url,
                 "title": doc.title,
                 "page_type": doc.page_type,
-                "relative_path": doc.relative_path or rel,
+                "relative_path": doc.relative_path,
                 "slug": doc.slug,
-                "char_count": len(doc.markdown_body),
+                "char_count": len(doc.markdown_body or ""),
                 "status": doc.status,
                 "content_hash": doc.content_hash,
                 "crawled_at": doc.crawled_at,
@@ -157,8 +157,6 @@ class RagWriter:
             if doc.error:
                 entry["error"] = doc.error
             index_entries.append(entry)
-            if rel:
-                exportable.append(doc)
 
         parts: List[str] = []
         if self.write_parts and exportable:
@@ -181,19 +179,39 @@ class RagWriter:
                 max_pages_per_part=self.max_pages_per_part,
             )
             parts = writer.write_all(part_docs)
+            # Map each URL → part file; registry relative_path prefers the part
+            url_to_part = {
+                ie.get("url"): ie.get("part_file")
+                for ie in writer.index_entries
+                if ie.get("part_file")
+            }
+            for doc in exportable:
+                part_name = url_to_part.get(doc.url)
+                if part_name:
+                    doc.relative_path = part_name
             for entry in index_entries:
-                for ie in writer.index_entries:
-                    if ie.get("url") == entry.get("url"):
-                        entry["part_file"] = ie.get("part_file")
-                        break
+                part_name = url_to_part.get(entry.get("url"))
+                if part_name:
+                    entry["part_file"] = part_name
+                    entry["relative_path"] = part_name
+            self.written_paths.extend(parts)
+        elif exportable and not self.write_parts and self.write_per_url:
+            # Per-URL only mode: relative_path already set in write_page_file
+            for doc in exportable:
+                if doc.relative_path:
+                    for entry in index_entries:
+                        if entry.get("url") == doc.url:
+                            entry["relative_path"] = doc.relative_path
 
         index_path = self.output_dir / "index.json"
         payload = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "format": "rag_per_url",
+            "format": "rag_multipart" if parts else "rag_per_url",
             "total_pages": len(documents),
-            "exported_files": len(self.written_paths),
+            "exported_topics": len(exportable),
+            "exported_files": len(parts) if parts else len(self.written_paths),
             "parts": parts,
+            "write_per_url": self.write_per_url,
             "pages": index_entries,
         }
         index_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

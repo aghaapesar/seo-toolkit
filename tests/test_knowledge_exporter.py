@@ -113,12 +113,12 @@ def test_url_to_slug_and_noindex():
 
 
 def test_rag_writer_per_url_files():
-    """RagWriter writes pages/{type}/{slug}.md with standard url+title frontmatter."""
+    """RagWriter optional per-URL mode writes pages/{type}/{slug}.md."""
     from src.knowledge_exporter.rag_writer import RagPageDocument, RagWriter
 
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
-        writer = RagWriter(output_dir=out, write_parts=False)
+        writer = RagWriter(output_dir=out, write_parts=False, write_per_url=True)
         doc = RagPageDocument(
             url="https://example.com/product/foo",
             title="Foo Product",
@@ -145,6 +145,55 @@ def test_rag_writer_per_url_files():
         assert "# Foo Product" in text
         index = json.loads((out / "index.json").read_text(encoding="utf-8"))
         assert index["format"] == "rag_per_url"
+
+
+def test_rag_writer_multipart_default():
+    """Default RagWriter packs many products into knowledge_part_*.md without mid-split."""
+    from src.knowledge_exporter.rag_writer import RagPageDocument, RagWriter
+
+    with tempfile.TemporaryDirectory() as tmp:
+        out = Path(tmp)
+        writer = RagWriter(output_dir=out, write_parts=True, write_per_url=False, max_pages_per_part=10)
+        docs = [
+            RagPageDocument(
+                url=f"https://example.com/product/g{i}",
+                title=f"بازی {i}",
+                description="",
+                lang="fa",
+                markdown_body=(
+                    f"# بازی {i}\n\nمعرفی.\n\n"
+                    "## مشخصات کلی\n- نام اصلی (انگلیسی): ذکر نشده\n\n"
+                    "## نحوه بازی\nقوانین.\n\n"
+                    "## سوالات متداول\n**س؟**\nج.\n"
+                ),
+                crawled_at="2026-07-23T12:00:00+00:00",
+                status="success",
+                page_type="product",
+                slug=f"g{i}",
+            )
+            for i in range(3)
+        ]
+        result = writer.write_all(docs)
+        assert result["parts"]
+        assert not (out / "pages").exists()
+        part_text = (out / result["parts"][0]).read_text(encoding="utf-8")
+        assert part_text.count("url: https://example.com/product/") == 3
+        assert "# بازی 0" in part_text and "# بازی 2" in part_text
+        index = json.loads((out / "index.json").read_text(encoding="utf-8"))
+        assert index["format"] == "rag_multipart"
+        assert index["pages"][0]["relative_path"].startswith("knowledge_part_")
+
+
+def test_looks_like_category_listing():
+    """Shop category listings with many prices are detected."""
+    from src.knowledge_exporter.rag_ai import looks_like_category_listing, _fallback_body
+
+    listing = "پربازدیدترین ها تعداد نمایش 12 " + (" محصول X 100,000 تومان " * 6)
+    assert looks_like_category_listing(listing) is True
+    assert looks_like_category_listing("بازی جالیز ۳ تا ۷ نفر") is False
+    stub = _fallback_body("بازی معمایی", listing, page_type="product")
+    assert "لیست/دسته" in stub or "صفحه دسته" in stub
+    assert stub.count("تومان") == 0
 
 
 def test_cleanup_patterns_strip_site_chrome():

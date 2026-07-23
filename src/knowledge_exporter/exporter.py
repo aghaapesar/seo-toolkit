@@ -41,7 +41,7 @@ from src.knowledge_exporter.page_meta import (
     normalize_page_type,
     url_to_slug,
 )
-from src.knowledge_exporter.rag_ai import structure_page_markdown
+from src.knowledge_exporter.rag_ai import looks_like_category_listing, structure_page_markdown
 from src.knowledge_exporter.rag_writer import RagPageDocument, RagWriter
 from src.knowledge_exporter.sitemap_lastmod import fetch_url_lastmod_map
 
@@ -289,6 +289,24 @@ class KnowledgeExporter:
                 is_noindex=is_noidx,
             )
 
+        # Category/archive listings are not single products — skip for product RAG
+        if page_type == "product" and looks_like_category_listing(extracted.markdown):
+            return RagPageDocument(
+                url=url,
+                title=extracted.title,
+                description=extracted.description,
+                lang=extracted.lang,
+                markdown_body="",
+                crawled_at=crawled_at,
+                status="skipped_filter",
+                content_hash=extract_hash,
+                page_type="category",
+                slug=url_to_slug(url),
+                sitemap_lastmod=lastmod,
+                is_noindex=is_noidx,
+                error="category_listing_skipped",
+            )
+
         status = "cached" if result.from_cache else "success"
         if extracted.char_count < self.config.min_content_chars:
             return RagPageDocument(
@@ -478,6 +496,7 @@ class KnowledgeExporter:
         writer = RagWriter(
             output_dir=self.config.output_dir,
             write_parts=self.config.write_parts,
+            write_per_url=self.config.write_per_url,
             max_part_bytes=self.config.max_part_bytes,
             max_pages_per_part=self.config.max_pages_per_part,
         )

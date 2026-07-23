@@ -37,43 +37,74 @@ DEFAULT_CLEANUP_PATTERNS: List[str] = [
     r"(?s)دیدگاه\s*ها\s*:.*$",
 ]
 
-# Product body must mirror §7 sample structure exactly.
-_PRODUCT_SYSTEM = """تو ویرایشگر محتوای فارسی برای پایگاه دانش چت‌بات (RAG) هستی.
-خروجی باید دقیقاً مطابق «استاندارد تهیه محتوا برای پایگاه دانش (RAG)» باشد.
+
+def looks_like_category_listing(text: str) -> bool:
+    """
+    Heuristic: page is a category/archive listing, not a single product.
+
+    Input:
+        text: Extracted markdown/HTML text.
+
+    Output:
+        True when multiple priced items / shop sort chrome dominate.
+    """
+    raw = text or ""
+    toman = len(re.findall(r"تومان", raw))
+    sort_chrome = any(
+        k in raw
+        for k in (
+            "پربازدیدترین",
+            "پرفروش‌ترین",
+            "پرفروش ترین",
+            "تعداد نمایش",
+            "جدیدترین ها",
+            "ارزان‌ترین",
+            "گران‌ترین",
+        )
+    )
+    return toman >= 5 or (sort_chrome and toman >= 2)
+
+# Product body: RAG standard §7 + recommendation schema for game suggester.
+_PRODUCT_SYSTEM = """تو ویرایشگر محتوای فارسی برای پایگاه دانش چت‌بات (RAG) فروشگاه بازی هستی.
+خروجی باید دقیقاً مطابق «استاندارد تهیه محتوا برای پایگاه دانش (RAG)» باشد و مشخصات را برای **سیستم پیشنهاد بازی** ساخت‌یافته نگه دارد.
 
 ## اصول (الزامی)
-1. هر سند فقط یک موضوع/محصول است؛ موضوعات مختلف را مخلوط نکن.
-2. خروجی فقط بدنه Markdown UTF-8 است — بدون YAML frontmatter (سیستم جداگانه url/title را می‌گذارد).
-3. متن تمیز: منو، اشتراک‌گذاری، محصولات مرتبط، تبلیغات، امتیاز/رای، برچسب‌ها و قالب سایت را حذف کن.
-4. نام کامل محصول را در H1 و حداقل یک‌بار در ابتدای متن معرفی تکرار کن؛ فقط «این محصول» ننویس.
-5. قیمت و موجودی را ننویس یا صریح بنویس: «برای قیمت به‌روز به صفحه محصول مراجعه شود».
-6. طول پیشنهادی ۲۰۰ تا ۲۰۰۰ کلمه؛ کوتاه بودن اشکال ندارد، مخلوط شدن موضوعات اشکال دارد.
-7. لینک خارجی نساز.
+1. هر سند فقط یک محصول/بازی است؛ لیست چند محصول، فیلتر فروشگاه، قیمت‌ها و «محصولات مرتبط» را مخلوط نکن.
+2. اگر صفحه در واقع لیست دسته/آرشیو است (چندین محصول + قیمت کنار هم، مرتب‌سازی پربازدید/پرفروش)، خروجی نساز که وانمود کند یک بازی است — فقط یک پاراگراف کوتاه بگو این صفحه دسته است و مشخصات کلی را خالی با «ذکر نشده» بگذار.
+3. خروجی فقط بدنه Markdown UTF-8 است — بدون YAML frontmatter.
+4. نام کامل بازی را در H1 و حداقل یک‌بار در متن معرفی تکرار کن.
+5. قیمت و موجودی را ننویس یا بنویس: «برای قیمت به‌روز به صفحه محصول مراجعه شود».
+6. لینک خارجی نساز.
+7. طول پیشنهادی ۲۰۰ تا ۲۰۰۰ کلمه.
 
-## ساختار اجباری (مثل نمونه استاندارد §۷)
-# {نام کامل محصول}
+## ساختار اجباری (فرمت استاندارد + اسکیمای پیشنهاد بازی)
+# {نام کامل فارسی بازی}
 
-{۱ تا چند جمله معرفی با نام کامل — بدون سرتیتر ## معرفی}
+{۱–۳ جمله معرفی با نام کامل}
 
 ## مشخصات کلی
-- تعداد بازیکن: …
-- رده سنی: …
-- مدت بازی: …
-- سبک: …
-(و سایر مشخصات ساخت‌یافته مثل جنس، ابعاد، محتویات جعبه در صورت وجود)
+اسکیمای پیشنهاد بازی — همه کلیدها را به صورت بولت پر کن (اگر در صفحه نبود از نام خارجی + دانش همان بازی تکمیل کن و با « (تکمیل‌شده از دانش عمومی)» علامت بزن):
+- نام اصلی (انگلیسی): …
+- تعداد بازیکن: X تا Y نفر
+- رده سنی: … سال به بالا
+- مدت بازی: … دقیقه
+- سبک / ژانر: … (مثلاً کارتی، استراتژیک، معمایی، مهمانی)
+- تم: … (مثلاً کشاورزی، جنایی، فانتزی)
+- مکانیزم‌ها: … (مثلاً مذاکره، پیش‌نویس، همکاری)
+- سطح پیچیدگی: سبک | متوسط | سنگین
+- نوع تعامل: رقابتی | همکاری | نیمه‌رقابتی
+- مناسب برای: … (خانواده / مهمانی / دونفره / گروهی / کودک و …)
+- ناشر: … یا ذکر نشده
 
 ## نحوه بازی
-خلاصه قوانین / گیم‌پلی…
+خلاصه گیم‌پلی و قوانین (بدون اسپویل سنگین).
 
 ## سوالات متداول
-**سؤال پرتکرار؟**
-پاسخ کوتاه.
-
-## تکمیل کمبودها
-- اول فقط از محتوای صفحه استخراج کن.
-- اگر مشخصات کلیدی نبود: نام اصلی/خارجی را از عنوان بگیر و با دانش همان محصول تکمیل کن؛
-  هر خط تکمیل‌شده را با پسوند « (تکمیل‌شده از دانش عمومی)» علامت بزن.
-- اگر مطمئن نیستی بنویس «ذکر نشده» و به صفحه محصول ارجاع بده."""
+۲ تا ۴ پرسش مفید برای پیشنهاد خرید، مثلاً مناسب بودن سن، تعداد بازیکن، مقایسه سبک.
+فرمت:
+**سؤال؟**
+پاسخ.
+"""
 
 _BLOG_SYSTEM = """تو ویرایشگر بلاگ برای پایگاه دانش RAG (دستیار خرید) هستی؛ مطابق استاندارد RAG.
 قوانین:
@@ -179,6 +210,10 @@ def structure_page_markdown(
         RuntimeError: credit exhausted.
     """
     page_type = (page_type or "other").lower()
+    # Defense: category listings must not become fake single-product docs
+    if page_type == "product" and looks_like_category_listing(raw_markdown):
+        return apply_cleanup_patterns(_category_listing_body(title))
+
     if page_type == "product":
         system = _PRODUCT_SYSTEM
     elif page_type == "blog":
@@ -201,16 +236,23 @@ def structure_page_markdown(
     sample_hint = ""
     if page_type == "product":
         sample_hint = """
-Reference shape (body only — no frontmatter in your output):
+Reference shape (body only):
 # بازی فکری جالیز
 
 بازی فکری جالیز یک بازی کارتی رقابتی با تم کشاورزی و معامله است.
 
 ## مشخصات کلی
+- نام اصلی (انگلیسی): Jaliz
 - تعداد بازیکن: ۳ تا ۷ نفر
 - رده سنی: ۹ سال به بالا
 - مدت بازی: ۳۰ تا ۶۰ دقیقه
-- سبک: کارتی، اقتصادی، تعاملی
+- سبک / ژانر: کارتی، اقتصادی
+- تم: کشاورزی، معامله
+- مکانیزم‌ها: مذاکره، کاشت و برداشت
+- سطح پیچیدگی: سبک
+- نوع تعامل: رقابتی
+- مناسب برای: خانواده، گروهی
+- ناشر: ذکر نشده
 
 ## نحوه بازی
 ...
@@ -262,6 +304,51 @@ Produce the cleaned RAG Markdown body now (complete for this single topic)."""
     return body
 
 
+def _empty_recommendation_specs() -> str:
+    """
+    Empty game-recommendation schema bullets (RAG product shape).
+
+    Output:
+        Markdown bullet list with «ذکر نشده» placeholders.
+    """
+    return (
+        "- نام اصلی (انگلیسی): ذکر نشده\n"
+        "- تعداد بازیکن: ذکر نشده\n"
+        "- رده سنی: ذکر نشده\n"
+        "- مدت بازی: ذکر نشده\n"
+        "- سبک / ژانر: ذکر نشده\n"
+        "- تم: ذکر نشده\n"
+        "- مکانیزم‌ها: ذکر نشده\n"
+        "- سطح پیچیدگی: ذکر نشده\n"
+        "- نوع تعامل: ذکر نشده\n"
+        "- مناسب برای: ذکر نشده\n"
+        "- ناشر: ذکر نشده"
+    )
+
+
+def _category_listing_body(title: str) -> str:
+    """
+    Stub body when the page is a category/archive listing, not one product.
+
+    Input:
+        title: Page title.
+
+    Output:
+        Short RAG-shaped note so exporters never dump shop listings into gameplay.
+    """
+    name = (title or "").strip() or "صفحه دسته"
+    return (
+        f"# {name}\n\n"
+        f"این صفحه یک لیست/دسته فروشگاهی است، نه معرفی یک بازی واحد؛ "
+        f"برای پیشنهاد بازی از اسناد تک‌محصولی استفاده شود.\n\n"
+        f"## مشخصات کلی\n{_empty_recommendation_specs()}\n\n"
+        f"## نحوه بازی\nذکر نشده — صفحه دسته است.\n\n"
+        f"## سوالات متداول\n"
+        f"**آیا این صفحه یک محصول است؟**\n"
+        f"خیر؛ لیست چند محصول است.\n"
+    )
+
+
 def _fallback_body(title: str, raw_markdown: str, *, page_type: str = "other") -> str:
     """
     Rule-based fallback when LLM unavailable — still matches standard shape.
@@ -269,11 +356,17 @@ def _fallback_body(title: str, raw_markdown: str, *, page_type: str = "other") -
     heading = f"# {title}\n\n" if title else ""
     body = raw_markdown.strip()
     if page_type == "product":
+        if looks_like_category_listing(body):
+            return _category_listing_body(title)
+        # Keep fallback short — do not dump entire shop chrome into gameplay
+        snippet = body[:1200].strip()
+        if len(body) > 1200:
+            snippet += "…"
         return (
             f"{heading}"
             f"{title} — خلاصه استخراج‌شده از صفحه محصول.\n\n"
-            f"## مشخصات کلی\n- ذکر نشده\n\n"
-            f"## نحوه بازی\n{body}\n\n"
+            f"## مشخصات کلی\n{_empty_recommendation_specs()}\n\n"
+            f"## نحوه بازی\n{snippet}\n\n"
             f"## سوالات متداول\n"
             f"**قیمت به‌روز چقدر است؟**\n"
             f"برای قیمت به‌روز به صفحه محصول مراجعه شود.\n"

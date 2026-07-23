@@ -1,4 +1,4 @@
-# Seo Toolkit v4.14.1
+# Seo Toolkit v4.15.0
 
 A powerful, interactive Python application optimized for **Persian/Farsi content** that helps you improve your website's SEO through:
 1. **Content Optimization**: Analyze Google Search Console data with Persian-aware AI
@@ -63,6 +63,12 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 - 24h uptime history (SQLite) with sparklines; refresh / auto-poll
 - API: `/api/v1/services/status`, `/api/v1/services/history`
 
+### Knowledge Export — multi-product RAG parts (v4.15.0)
+- Default export: **`knowledge_part_XX.md`** with many products per file (product never split across files)
+- Game-recommendation schema in `## مشخصات کلی` for chatbot suggest-a-game flows
+- Category listings skipped; download UI shows ZIP packages + parts (not thousands of per-URL links)
+- Optional: also write one `.md` per URL
+
 ### Knowledge Export — RAG standard output (v4.14.1)
 - MD files follow [`docs/RAG_CONTENT_STANDARD.md`](docs/RAG_CONTENT_STANDARD.md): `url`+`title` frontmatter + product sample sections
 
@@ -72,10 +78,10 @@ Repository: [github.com/aghaapesar/seo-toolkit](https://github.com/aghaapesar/se
 - Changed pages flagged for selective RAG re-index (select / ZIP / mark re-indexed)
 
 ### Knowledge Exporter (v4.6.0) — per-URL RAG + LLM + registry
-- **One `.md` per URL**: `pages/{page_type}/{slug}.md` with RAG frontmatter
+- Optional **one `.md` per URL**: `pages/{page_type}/{slug}.md` with RAG frontmatter
 - **LLM cleanup** (GapGPT): product vs blog templates; model test before export
 - **SQLite registry**: staleness (sitemap lastmod + content hash), skip unchanged, download tracking
-- Filters: blog/noindex off by default; product sample limit for testing; optional `knowledge_part_*.md`
+- Filters: blog/noindex off by default; product sample limit for testing; multi-product `knowledge_part_*.md` as primary
 - ZIP download for selected files; staleness report after analyze
 
 ### Knowledge Exporter (v4.1.3) — URL pattern + live sampling

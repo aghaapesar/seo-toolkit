@@ -80,6 +80,12 @@
             {{ strings.knowledge_export_write_parts }}
           </label>
           <label class="checkbox-label">
+            <input type="checkbox" name="write_per_url" value="true" />
+            {{ strings.knowledge_export_write_per_url }}
+          </label>
+        </div>
+        <div class="form-grid-2">
+          <label class="checkbox-label">
             <input type="checkbox" name="skip_unchanged" value="true" checked />
             {{ strings.knowledge_export_skip_unchanged }}
           </label>
@@ -134,11 +140,10 @@
     </ul>
     <h3 class="panel-info-title" style="margin-top: 1rem;">{% if lang == 'fa' %}خروجی RAG{% else %}RAG output{% endif %}</h3>
     <ul class="steps">
-      <li>{% if lang == 'fa' %}یک فایل .md کامل به ازای هر URL (محصول نصف نمی‌شود){% else %}One complete .md per URL (product never split){% endif %}</li>
-      <li>pages/{type}/{slug}.md + index.json</li>
-      <li>{% if lang == 'fa' %}پکیج ZIP خودکار هر اجرا + پکیج فقط تغییرکرده‌ها{% else %}Auto ZIP package per run + changed-only package{% endif %}</li>
-      <li>{% if lang == 'fa' %}مشخصات ناقص از نام خارجی محصول با LLM تکمیل می‌شود{% else %}Missing specs filled from foreign product name via LLM{% endif %}</li>
-      <li>{% if lang == 'fa' %}فلگ «تغییرکرده» برای ایندکس مجدد انتخابی در RAG{% else %}«Changed» flag for selective RAG re-index{% endif %}</li>
+      <li>{% if lang == 'fa' %}چند محصول در هر فایل knowledge_part_XX.md (محصول نصف نمی‌شود){% else %}Many products per knowledge_part_XX.md (never mid-split){% endif %}</li>
+      <li>{% if lang == 'fa' %}اسکیمای پیشنهاد بازی در «مشخصات کلی»{% else %}Game-recommendation schema in specs{% endif %}</li>
+      <li>{% if lang == 'fa' %}پکیج ZIP کامل + پکیج تغییرکرده‌ها{% else %}Full ZIP + changed-only ZIP{% endif %}</li>
+      <li>{% if lang == 'fa' %}اختیاری: یک فایل جدا per URL{% else %}Optional: one file per URL{% endif %}</li>
     </ul>
     <p class="muted">
       <a href="/tools/site-index?lang={{ lang }}{% if active_project_slug %}&project={{ active_project_slug }}{% endif %}">{{ strings.nav_site_index }}</a>

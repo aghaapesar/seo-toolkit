@@ -114,9 +114,10 @@ python main.py --mode knowledge-export \
 ```
 
 Output:
-- `pages/{type}/{slug}.md` — one RAG Markdown file per URL (YAML frontmatter)
-- `index.json` — registry of all pages, paths, hashes, status
-- Optional `knowledge_part_01.md`, … (legacy multi-doc parts)
+- `knowledge_part_01.md`, … — **primary**: many products per file (each product complete; never mid-split)
+- `index.json` — registry of all pages, part mapping, hashes, status
+- `packages/*_all.zip` / `*_changed.zip` — RAG upload packages
+- Optional `pages/{type}/{slug}.md` — one file per URL when enabled
 - `.cache/` — downloaded HTML for re-runs (ETag / Last-Modified)
 
 Options: `--include-pattern`, `--exclude-pattern`, `--urls-file`, `--rate-limit`, `--timeout`, `--max-retries`.
@@ -126,14 +127,10 @@ Options: `--include-pattern`, `--exclude-pattern`, `--urls-file`, `--rate-limit`
 1. Open **خروجی Knowledge Base / Knowledge Base Export** from the dashboard (Mode 12).
 2. **Phase 1** — click **Analyze sitemap**; URLs grouped by path pattern; staleness report (new/stale/unchanged).
 3. Select patterns (checkboxes); each row shows pattern, type badge, sample titles.
-4. **Phase 2** — pick AI model, test connection, set filters (blog, noindex, product sample limit) → **Start export**.
-5. Download individual `pages/…` files, ZIP selection, or legacy `knowledge_part_*.md` from the tool page.
-
-
-8. After export, download **پکیج کامل** and/or **پکیج تغییرکرده‌ها** under `packages/`.
-9. On later sitemap analyze, stale/updated URLs are flagged; use **فقط تغییرکرده‌ها** then ZIP / send to RAG; click **علامت ایندکس‌شده** when done.
-10. Each product is one complete `pages/product/{slug}.md` — never split mid-product.
-
+4. **Phase 2** — pick AI model, test connection, set filters (blog, noindex, product sample limit). Keep **multi-product parts** on; optionally enable per-URL files → **Start export**.
+5. Download **پکیج کامل** and/or **پکیج تغییرکرده‌ها**, or select individual `knowledge_part_*.md` files.
+6. On later sitemap analyze, stale/updated topics are flagged; use changed package / **فقط تغییرکرده‌ها** then ZIP; click **علامت ایندکس‌شده** when RAG re-index is done.
+7. Product body uses game-recommendation schema under `## مشخصات کلی` (see `docs/RAG_CONTENT_STANDARD.md`).
 
 ### Service status monitoring
 

@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## v4.15.0 (2026-07-23)
+
+### Knowledge Export — multi-product parts + game recommendation schema
+- **Primary output** is multi-product `knowledge_part_XX.md` (many games per file); a product that starts in a part **always finishes in that same part** (never mid-split)
+- Optional checkbox: also write one `pages/{type}/{slug}.md` per URL
+- Product «مشخصات کلی» uses a **game-recommendation schema**: نام اصلی، تعداد بازیکن، رده سنی، مدت، سبک/ژانر، تم، مکانیزم‌ها، پیچیدگی، نوع تعامل، مناسب برای، ناشر — still in the official RAG frontmatter + section format
+- Category/archive listing pages (shop grids with many prices) are skipped / stubbed so they never dump product lists into «نحوه بازی»
+- Download UI redesigned: full/changed ZIP packages first, then selectable part files; per-URL files collapsed if present
+- Packages prioritize part files + `index.json` for RAG upload
+
 ## v4.14.1 (2026-07-22)
 
 ### Knowledge Export — align MD output with official RAG content standard

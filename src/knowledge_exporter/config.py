@@ -40,7 +40,8 @@ class KnowledgeExporterConfig:
         include_blog: Include blog content type segments.
         include_noindex: Include pages with noindex meta.
         product_sample_limit: Max product URLs (0 = unlimited).
-        write_parts: Also write legacy knowledge_part_*.md files.
+        write_parts: Write multi-product knowledge_part_*.md (primary output).
+        write_per_url: Also write one pages/{type}/{slug}.md per URL (optional).
         skip_unchanged: Skip URLs when lastmod + content hash match registry.
         url_page_types: Optional URL → page_type map from sitemap analysis.
         lastmod_map: Optional URL → sitemap lastmod map.
@@ -66,6 +67,7 @@ class KnowledgeExporterConfig:
     include_noindex: bool = False
     product_sample_limit: int = 0
     write_parts: bool = True
+    write_per_url: bool = False
     skip_unchanged: bool = True
     url_page_types: Optional[dict] = field(default=None, repr=False)
     lastmod_map: Optional[dict] = field(default=None, repr=False)

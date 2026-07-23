@@ -15,7 +15,7 @@ import zipfile
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Set
 
 from src.ai_model_manager import AIModelManager
 from src.knowledge_exporter.config import KnowledgeExporterConfig
@@ -72,51 +72,85 @@ def _file_entry(
 
 def list_export_files(output_dir: Path, project_slug: str = "") -> List[Dict[str, Any]]:
     """
-    List per-URL pages, part files, packages, and index.json.
+    List packages, multi-product part files, optional per-URL pages, index.json.
 
     Output:
-        Sorted list of file_entry dicts with optional registry status / reindex flag.
+        File entries with kind: package | part | page | index for the download UI.
     """
     if not output_dir.is_dir():
         return []
 
-    registry_by_path: Dict[str, Dict[str, Any]] = {}
+    # Aggregate reindex flags by relative_path (often a part filename)
+    reindex_by_path: Dict[str, Dict[str, Any]] = {}
     if project_slug:
         for row in list_pages(project_slug):
-            rel = row.get("relative_path") or ""
-            if rel:
-                registry_by_path[rel] = row
+            rel = (row.get("relative_path") or "").strip()
+            if not rel:
+                continue
+            prev = reindex_by_path.get(rel)
+            if not prev:
+                reindex_by_path[rel] = {
+                    "needs_reindex": bool(row.get("needs_reindex")),
+                    "change_reason": str(row.get("change_reason") or ""),
+                    "topic_count": 1,
+                }
+            else:
+                prev["topic_count"] = int(prev.get("topic_count") or 0) + 1
+                if row.get("needs_reindex"):
+                    prev["needs_reindex"] = True
+                    if row.get("change_reason"):
+                        prev["change_reason"] = str(row.get("change_reason"))
 
     entries: List[Dict[str, Any]] = []
-    index_path = output_dir / "index.json"
-    if index_path.is_file():
-        entries.append(_file_entry("index.json", index_path))
 
     packages_dir = output_dir / "packages"
     if packages_dir.is_dir():
-        for zpath in sorted(packages_dir.glob("*.zip"), reverse=True)[:20]:
-            label = f"پکیج / {zpath.name}"
-            entries.append(_file_entry(label, zpath, status="package"))
+        for zpath in sorted(packages_dir.glob("*.zip"), reverse=True)[:12]:
+            kind = "package_changed" if "_changed" in zpath.name else "package"
+            label = (
+                "پکیج تغییرکرده‌ها (RAG)"
+                if kind == "package_changed"
+                else "پکیج کامل دانش"
+            )
+            entry = _file_entry(f"{label} — {zpath.name}", zpath, status="package")
+            entry["kind"] = kind
+            entries.append(entry)
+
+    for part in sorted(output_dir.glob("knowledge_part_*.md")):
+        meta = reindex_by_path.get(part.name, {})
+        entry = _file_entry(
+            part.name,
+            part,
+            status="part",
+            needs_reindex=bool(meta.get("needs_reindex")),
+            change_reason=str(meta.get("change_reason") or ""),
+        )
+        entry["kind"] = "part"
+        entry["topic_count"] = int(meta.get("topic_count") or 0)
+        entries.append(entry)
+
+    index_path = output_dir / "index.json"
+    if index_path.is_file():
+        entry = _file_entry("index.json", index_path, status="index")
+        entry["kind"] = "index"
+        entries.append(entry)
 
     pages_dir = output_dir / "pages"
     if pages_dir.is_dir():
         for md in sorted(pages_dir.rglob("*.md")):
             rel_in_output = md.relative_to(output_dir).as_posix()
-            reg = registry_by_path.get(rel_in_output, {})
-            label = md.relative_to(pages_dir).as_posix()
-            entries.append(
-                _file_entry(
-                    label,
-                    md,
-                    page_type=reg.get("page_type") or md.parent.name,
-                    status=reg.get("status") or "exported",
-                    needs_reindex=bool(reg.get("needs_reindex")),
-                    change_reason=str(reg.get("change_reason") or ""),
-                )
+            meta = reindex_by_path.get(rel_in_output, {})
+            entry = _file_entry(
+                md.relative_to(pages_dir).as_posix(),
+                md,
+                page_type=md.parent.name,
+                status="page",
+                needs_reindex=bool(meta.get("needs_reindex")),
+                change_reason=str(meta.get("change_reason") or ""),
             )
+            entry["kind"] = "page"
+            entries.append(entry)
 
-    for part in sorted(output_dir.glob("knowledge_part_*.md")):
-        entries.append(_file_entry(part.name, part))
     return entries
 
 
@@ -127,23 +161,22 @@ def write_export_packages(
     written_relative_paths: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """
-    Write ZIP packages for the whole export and for changed (needs_reindex) pages.
-
-    Input:
-        written_relative_paths: Paths written in this run (under knowledge_export/).
+    Write ZIP packages: all knowledge parts (+ index) and changed parts only.
 
     Output:
-        Dict with package paths and counts.
+        Dict with package download entries and counts.
     """
     packages_dir = output_dir / "packages"
     packages_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
-    # Full package: all pages/*.md + index.json from this project output
     all_paths: List[Path] = []
     index_path = output_dir / "index.json"
     if index_path.is_file():
         all_paths.append(index_path)
+    part_files = sorted(output_dir.glob("knowledge_part_*.md"))
+    all_paths.extend(part_files)
+    # Include per-URL pages only if present (optional mode)
     pages_dir = output_dir / "pages"
     if pages_dir.is_dir():
         all_paths.extend(sorted(pages_dir.rglob("*.md")))
@@ -156,7 +189,8 @@ def write_export_packages(
                 "Seo Toolkit — بسته خروجی Knowledge Base (RAG)\n"
                 f"project: {project_slug}\n"
                 f"generated_at: {stamp}\n\n"
-                "هر فایل pages/{type}/{slug}.md یک موضوع کامل است و نباید نصف شود.\n"
+                "فرمت: چند محصول در هر knowledge_part_XX.md\n"
+                "هر محصول با frontmatter (url + title) جدا می‌شود و هرگز نصف نمی‌شود.\n"
                 "برای ایندکس مجدد فقط پکیج changed را به سیستم RAG بفرستید.\n"
             ),
         )
@@ -164,59 +198,45 @@ def write_export_packages(
             arc = path.relative_to(output_dir).as_posix()
             zf.write(path, arcname=arc)
 
-    # Changed-only package for RAG re-index
-    changed_rows = list_pages(project_slug, needs_reindex=True)
-    changed_files: List[Path] = []
-    for row in changed_rows:
-        rel = row.get("relative_path") or ""
-        if not rel:
-            continue
-        path = output_dir / rel
-        if path.is_file():
-            changed_files.append(path)
-
-    # Also include files written this run even if flag missed
+    # Changed parts: any part file referenced by needs_reindex registry rows
+    changed_names: Set[str] = set()
+    for row in list_pages(project_slug, needs_reindex=True):
+        rel = (row.get("relative_path") or "").strip()
+        if rel.endswith(".md"):
+            changed_names.add(Path(rel).name)
     for rel in written_relative_paths or []:
-        path = output_dir / rel
-        if path.is_file() and path not in changed_files and rel.startswith("pages/"):
-            # Only add if registry says reindex or was in this write set
-            changed_files.append(path)
+        name = Path(rel).name
+        if name.startswith("knowledge_part_") and name.endswith(".md"):
+            changed_names.add(name)
 
+    changed_files = [output_dir / n for n in sorted(changed_names) if (output_dir / n).is_file()]
     changed_zip: Optional[Path] = None
     if changed_files:
-        # Dedupe
-        seen = set()
-        unique: List[Path] = []
-        for p in changed_files:
-            key = str(p.resolve())
-            if key not in seen:
-                seen.add(key)
-                unique.append(p)
-        changed_files = unique
         changed_zip = packages_dir / f"knowledge_export_{stamp}_changed.zip"
         with zipfile.ZipFile(changed_zip, "w", compression=zipfile.ZIP_DEFLATED) as zf:
             zf.writestr(
                 "README.txt",
                 (
-                    "Seo Toolkit — فقط فایل‌های تغییرکرده برای ایندکس مجدد RAG\n"
+                    "Seo Toolkit — فقط پارت‌های تغییرکرده برای ایندکس مجدد RAG\n"
                     f"project: {project_slug}\n"
                     f"count: {len(changed_files)}\n"
-                    "پس از ارسال به RAG، در پنل «علامت‌گذاری به‌عنوان ایندکس‌شده» را بزنید.\n"
                 ),
             )
+            if index_path.is_file():
+                zf.write(index_path, arcname="index.json")
             for path in changed_files:
-                arc = path.relative_to(output_dir).as_posix()
-                zf.write(path, arcname=arc)
+                zf.write(path, arcname=path.name)
 
     return {
-        "package_all": _file_entry("پکیج کامل خروجی", full_zip, status="package"),
+        "package_all": _file_entry("پکیج کامل دانش", full_zip, status="package"),
         "package_changed": (
-            _file_entry("پکیج تغییرکرده‌ها (RAG re-index)", changed_zip, status="package")
+            _file_entry("پکیج تغییرکرده‌ها (RAG)", changed_zip, status="package")
             if changed_zip
             else None
         ),
         "changed_count": len(changed_files),
         "all_count": len(all_paths),
+        "part_count": len(part_files),
     }
 
 def analysis_cache_dir(project_slug: str) -> Path:
@@ -373,6 +393,7 @@ def run_knowledge_export(
     include_noindex: bool = False,
     product_sample_limit: int = 0,
     write_parts: bool = True,
+    write_per_url: bool = False,
     skip_unchanged: bool = True,
     max_part_kb: int = 500,
     max_pages_per_part: int = 50,
@@ -463,6 +484,7 @@ def run_knowledge_export(
         include_noindex=include_noindex,
         product_sample_limit=max(0, product_sample_limit),
         write_parts=write_parts,
+        write_per_url=write_per_url,
         skip_unchanged=skip_unchanged,
         url_page_types=url_page_types or None,
         lastmod_map=lastmod_map or None,
